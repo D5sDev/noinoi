@@ -184,15 +184,19 @@ details[open] summary{margin-bottom:12px}
 
 /* ---------- มือถือ ---------- */
 @media(max-width:640px){
-  body{padding-bottom:68px}          /* เผื่อที่ให้แถบปุ่มเล่นที่ลอยอยู่ล่างจอ */
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px))}   /* เผื่อที่ให้แถบปุ่มล่างจอ */
   main{padding:13px;gap:13px}
   .panel{padding:13px}
 
-  /* ปุ่มย้ายลงล่างหมดแล้ว หัวเรื่องเหลือแค่ชื่อกับแท็บ แถวเดียวจบ หนึบไว้ได้ */
-  .top{padding:9px 13px;gap:10px;flex-wrap:nowrap}
-  .top .brand{flex:0 1 auto;min-width:0}
-  .brand h1{white-space:nowrap}
-  .pages{flex:0 0 auto}
+  /* ปุ่มย้ายลงล่างหมดแล้ว หัวเรื่องเหลือแค่ชื่อกับแท็บ หนึบไว้ได้
+     ต้องยอมให้ตกบรรทัดได้ ฟอนต์ไทยสำรองบางเครื่องกว้างกว่าที่คำนวณไว้
+     ถ้าบังคับไม่ให้ตกบรรทัด แท็บจะหลุดขอบขวาไปเลย */
+  .top{padding:9px 13px;gap:8px 10px;flex-wrap:wrap}
+  .top .brand{flex:0 1 auto;min-width:0;overflow:hidden}
+  .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pages{flex:0 1 auto;min-width:0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pages::-webkit-scrollbar{display:none}
+  .pages a{padding:6px 10px;font-size:12px;white-space:nowrap}
   .brand p{display:none}
   .brand{gap:9px}
   .logo{width:34px;height:34px;flex-basis:34px;font-size:18px;border-radius:10px}
@@ -202,7 +206,8 @@ details[open] summary{margin-bottom:12px}
   /* ปุ่มทั้งหมดย้ายลงแถบล่างจอ กดด้วยนิ้วโป้งได้ ไม่ต้องเลื่อนกลับขึ้นไปหา */
   .bar{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
-    margin:0;padding:8px 10px;gap:8px;flex-wrap:nowrap;align-items:stretch;
+    margin:0;gap:8px;flex-wrap:nowrap;align-items:stretch;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
     border-top:1px solid var(--line);
   }
