@@ -191,7 +191,9 @@ details[open] summary{margin-bottom:12px}
   /* ปุ่มย้ายลงล่างหมดแล้ว หัวเรื่องเหลือแค่ชื่อกับแท็บ หนึบไว้ได้
      ต้องยอมให้ตกบรรทัดได้ ฟอนต์ไทยสำรองบางเครื่องกว้างกว่าที่คำนวณไว้
      ถ้าบังคับไม่ให้ตกบรรทัด แท็บจะหลุดขอบขวาไปเลย */
-  .top{padding:9px 13px;gap:8px 10px;flex-wrap:wrap}
+  /* ต้องเอา backdrop-filter ออก ไม่งั้น .top จะกลายเป็นกรอบอ้างอิงของลูกที่ position:fixed
+     แถบปุ่มจะไปเกาะก้นหัวเรื่องแล้วทับชื่อกับแท็บแทนที่จะลงไปก้นจอ */
+  .top{padding:9px 13px;gap:8px 10px;flex-wrap:wrap;backdrop-filter:none;background:rgba(20,17,13,.97)}
   .top .brand{flex:0 1 auto;min-width:0;overflow:hidden}
   .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pages{flex:0 1 auto;min-width:0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
