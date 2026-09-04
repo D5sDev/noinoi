@@ -5,7 +5,8 @@
 
 | | |
 |---|---|
-| [โน้ตไทย](https://d5sdev.github.io/NoiNoi/) | เครื่องดนตรีสังเคราะห์ 6 ชนิด |
+| [หน้าแรก](https://d5sdev.github.io/NoiNoi/) | อธิบายภาพรวมและวิธีเขียนโน้ตย่อ ๆ |
+| [โน้ตไทย](https://d5sdev.github.io/NoiNoi/thai.html) | เครื่องดนตรีสังเคราะห์ 6 ชนิด |
 | [ขลุ่ย](https://d5sdev.github.io/NoiNoi/khlui.html) | เสียงขลุ่ยอัดจริง ลูกสะบัด เสียงควง |
 
 ---
@@ -88,16 +89,17 @@
 ## โครงไฟล์
 
 ```
-index.html     หน้าโน้ตไทย — แก้ไฟล์นี้โดยตรง เป็นต้นทาง
-khlui.html     หน้าขลุ่ย — สร้างจาก index.html อย่าแก้มือ
+index.html     หน้าแรก — หน้าเดียวจบ ไม่มีสคริปต์
+thai.html      หน้าโน้ตไทย — แก้ไฟล์นี้โดยตรง เป็นต้นทาง
+khlui.html     หน้าขลุ่ย — สร้างจาก thai.html อย่าแก้มือ
 tools/         สคริปต์สร้างและทดสอบ (ดู tools/README.md)
 samples/       ไฟล์เสียงขลุ่ยที่สกัดแล้ว + ค่าความถี่และจุด loop
 raw/           ไฟล์อัดต้นฉบับ
 ```
 
-`khlui.html` ถูกสร้างขึ้นมา ถ้าจะแก้อะไรที่มีทั้งสองหน้า ให้แก้ `index.html` แล้วสร้างใหม่
+`khlui.html` ถูกสร้างขึ้นมา ถ้าจะแก้อะไรที่มีทั้งสองหน้าเล่นโน้ต ให้แก้ `thai.html` แล้วสร้างใหม่
 
 ```bash
 python tools/make_khlui.py && python tools/build_sampler.py
-node tools/smoke.js index.html && node tools/smoke.js khlui.html
+node tools/smoke.js thai.html && node tools/smoke.js khlui.html
 ```

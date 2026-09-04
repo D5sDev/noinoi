@@ -6,21 +6,21 @@
 ## ไปป์ไลน์
 
 ```
-index.html ──make_khlui.py──▶ khlui.html (โครง) ──build_sampler.py──▶ khlui.html (ครบ)
+thai.html  ──make_khlui.py──▶ khlui.html (โครง) ──build_sampler.py──▶ khlui.html (ครบ)
                                                         ▲
 raw/*.mp3 ──extract_*.py──▶ samples/*.wav + *_meta.json ┘
 ```
 
-`index.html` เป็นต้นทางที่แก้ด้วยมือ ส่วน `khlui.html` สร้างขึ้นมาทั้งหมด **อย่าแก้มือ**
+`thai.html` เป็นต้นทางที่แก้ด้วยมือ ส่วน `khlui.html` สร้างขึ้นมาทั้งหมด **อย่าแก้มือ**
 
 ## สั่งงาน
 
 ```bash
-# สร้าง khlui.html ใหม่จาก index.html (ทำทุกครั้งที่แก้ index.html)
+# สร้าง khlui.html ใหม่จาก thai.html (ทำทุกครั้งที่แก้ thai.html)
 python tools/make_khlui.py && python tools/build_sampler.py
 
 # ทดสอบ
-node tools/smoke.js index.html && node tools/smoke.js khlui.html
+node tools/smoke.js thai.html && node tools/smoke.js khlui.html
 
 # สกัดตัวอย่างเสียงใหม่จากไฟล์อัด (ทำเมื่อเปลี่ยนไฟล์ใน raw/ เท่านั้น)
 python tools/extract_phiangor.py
@@ -31,7 +31,7 @@ python tools/extract_ckey.py
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| `make_khlui.py` | คัด `index.html` เป็นหน้าขลุ่ย — ตัดช่องเลือกเครื่องดนตรี เพิ่มลูกสะบัด/เสียงควง เปลี่ยนตัวอย่างโน้ตและคำอธิบาย |
+| `make_khlui.py` | คัด `thai.html` เป็นหน้าขลุ่ย — ตัดช่องเลือกเครื่องดนตรี เพิ่มลูกสะบัด/เสียงควง เปลี่ยนตัวอย่างโน้ตและคำอธิบาย |
 | `build_sampler.py` | ฝังไฟล์เสียงจาก `samples/` เป็น base64 และเปลี่ยน `playTone` ให้ใช้ sampler |
 | `extract_phiangor.py` | ตัดเสียงเพียงออ 12 ขั้นจาก `raw/เพียงออ.mp3` (ล่าง 7 จับนิ้ว + บน 5 เป่าทบ) |
 | `extract_ckey.py` | ตัดเสียงคีย์ซี 14 ขั้นจากไฟล์อัด 3 ไฟล์ |
@@ -63,4 +63,4 @@ python tools/extract_ckey.py
 ## หมายเหตุ
 
 สคริปต์ `patch_*.py` ที่ใช้พัฒนา `index.html` ระหว่างทางไม่ได้เก็บไว้
-เพราะแต่ละตัวแก้จากสถานะเฉพาะตอนนั้น รันซ้ำไม่ได้ — `index.html` คือต้นทางเดียว
+เพราะแต่ละตัวแก้จากสถานะเฉพาะตอนนั้น รันซ้ำไม่ได้ — `thai.html` คือต้นทางเดียว

@@ -2,7 +2,7 @@
 import io
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-src = os.path.join(ROOT, 'index.html')
+src = os.path.join(ROOT, 'thai.html')
 dst = os.path.join(ROOT, 'khlui.html')
 s = io.open(src, encoding='utf-8').read()
 
@@ -24,9 +24,9 @@ rep(u"<title>NoiNoi — ระบบเล่นโน้ตดนตรีไ�
 rep(u"      <h1>NoiNoi</h1>\n      <p>ระบบเล่นโน้ตดนตรีไทย · เสียงเท่า 7 เสียง</p>",
     u"      <h1>NoiNoi ขลุ่ย</h1>\n      <p>ขลุ่ยเพียงออ · ลูกสะบัด · เสียงควง</p>", "brand")
 
-rep(u"""    <a href="index.html" class="on">โน้ตไทย</a>
+rep(u"""    <a href="thai.html" class="on">โน้ตไทย</a>
     <a href="khlui.html">ขลุ่ย</a>""",
-u"""    <a href="index.html">โน้ตไทย</a>
+u"""    <a href="thai.html">โน้ตไทย</a>
     <a href="khlui.html" class="on">ขลุ่ย</a>""", "nav")
 
 # ═════ B. CSS เพิ่มเติมสำหรับลูกสะบัดและเสียงควง ═════

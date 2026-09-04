@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoiNoi — ระบบเล่นโน้ตดนตรีไทย</title>
+<style>
+:root{
+  --bg:#14110d; --bg2:#1c1813; --line:#3a3025; --line2:#4d3f2e;
+  --fg:#f2e9db; --dim:#a2937d; --gold:#e0b24d; --gold-dim:#8a6d2c;
+  --red:#c8553d; --green:#5f9b6b; --blue:#5c8fb5;
+  --slot:#241f18; --slot-on:#e0b24d;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(900px 500px at 12% -10%, #2a2118 0%, transparent 60%),
+    radial-gradient(700px 400px at 100% 0%, #241d2a 0%, transparent 55%),
+    var(--bg);
+  color:var(--fg);
+  font-family:'Sarabun','Noto Sans Thai','Leelawadee UI','Segoe UI',system-ui,sans-serif;
+  font-size:15px; line-height:1.55; min-height:100vh;
+}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:.2px}
+p{margin:0}
+
+/* header */
+.top{
+  position:sticky; top:0; z-index:20;
+  display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
+  padding:12px 20px; background:rgba(20,17,13,.88); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;
+  border-radius:12px;background:linear-gradient(145deg,var(--gold),#a97f27);
+  color:#20180a;font-size:21px;font-weight:700;
+  box-shadow:0 3px 14px rgba(224,178,77,.28);
+}
+.brand h1{font-size:19px;line-height:1.1}
+.brand p{font-size:12.5px;color:var(--dim)}
+.transport{display:flex;gap:8px;flex-wrap:wrap}
+.pages{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.pages a{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:7px 15px;border-radius:7px;transition:.14s}
+.pages a:hover{color:var(--fg);background:#241e17}
+.pages a.on{background:linear-gradient(145deg,var(--gold),#bd8f30);color:#1d1608}
+
+/* buttons */
+.btn{
+  font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  padding:9px 16px;border-radius:9px;
+  border:1px solid var(--line2); background:var(--bg2); color:var(--fg);
+  transition:.14s;
+}
+.btn:hover{border-color:var(--gold-dim);background:#241e17}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(145deg,var(--gold),#bd8f30);border-color:#c99c34;color:#1d1608}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--dim)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* layout */
+main{
+  max-width:1240px;margin:0 auto;padding:20px;
+  display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start;
+}
+.panel{
+  background:linear-gradient(180deg,rgba(38,32,24,.72),rgba(26,22,17,.72));
+  border:1px solid var(--line);border-radius:var(--r);padding:16px;
+}
+.panel.wide{grid-column:1/-1}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.panel-head h2{font-size:14px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold)}
+.meta{font-size:12.5px;color:var(--dim)}
+
+/* editor */
+textarea#src{
+  width:100%;min-height:190px;resize:vertical;
+  background:#100e0a;color:var(--fg);
+  border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+  font-family:'Sarabun','Noto Sans Thai',ui-monospace,monospace;
+  font-size:19px;line-height:2.05;letter-spacing:1px;
+  outline:none;
+}
+textarea#src:focus{border-color:var(--gold-dim)}
+.hint{font-size:12px;color:var(--dim);margin-top:8px}
+.tidybar{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.tidybar label{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.tidybar input[type=number]{width:66px;padding:6px 8px;font-size:13px}
+.tidybar select{width:auto;padding:6px 8px;font-size:15px}
+.tidybar .sep{width:1px;height:22px;background:var(--line)}
+.btn.sm{padding:6px 13px;font-size:13px}
+.subhint{font-size:11.5px;color:var(--dim);line-height:1.4}
+.pair{display:flex;gap:6px}
+.pair select:first-child{flex:1;min-width:0}
+.pair select:last-child{flex:0 0 76px}
+
+/* note keypad */
+.keys{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.keyrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.keyrow .tag{width:38px;flex:0 0 38px;font-size:11.5px;color:var(--dim);text-align:right}
+.key{
+  min-width:40px;height:38px;padding:0 8px;
+  font:inherit;font-size:19px;cursor:pointer;
+  background:#221d16;color:var(--fg);border:1px solid var(--line2);border-radius:7px;
+  transition:.12s;
+}
+.key:hover{background:var(--gold);color:#1d1608;border-color:var(--gold)}
+.key.util{font-size:13px;font-weight:600;min-width:auto;padding:0 12px;color:var(--dim)}
+.key.util:hover{color:#1d1608}
+
+/* controls */
+.ctl{display:grid;gap:12px}
+.field{display:grid;gap:5px}
+.field > label{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:8px}
+.field > label b{color:var(--gold);font-variant-numeric:tabular-nums}
+select,input[type=number]{
+  font:inherit;font-size:14px;width:100%;
+  background:#100e0a;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none;
+}
+select:focus,input[type=number]:focus{border-color:var(--gold-dim)}
+input[type=range]{width:100%;accent-color:var(--gold);background:transparent}
+input[type=range]:disabled{opacity:.3;cursor:not-allowed}
+.field:has(input[type=range]:disabled) > label{opacity:.45}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.checks{display:flex;flex-wrap:wrap;gap:14px;padding-top:2px}
+.check{display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer;color:var(--fg)}
+.check input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+
+/* score */
+.score{display:flex;flex-direction:column;gap:14px;overflow-x:auto;padding-bottom:4px}
+.line{display:flex;gap:10px;align-items:stretch;scroll-margin-top:96px;scroll-margin-bottom:56px}
+.linenum{
+  flex:0 0 26px;display:grid;place-items:center;
+  font-size:11.5px;color:var(--gold-dim);border-right:1px solid var(--line);
+}
+.cells{display:flex;gap:6px;flex-wrap:wrap}
+.cell{
+  border:1px solid var(--line);border-radius:8px;background:rgba(16,14,10,.6);
+  padding:4px;display:flex;flex-direction:column;gap:3px;min-width:0;
+}
+.cell .slots{display:flex;gap:3px}
+.slot{
+  width:34px;height:38px;display:grid;place-items:center;
+  background:var(--slot);border-radius:5px;
+  font-size:19px;line-height:1;color:var(--fg);
+  transition:background .08s,color .08s,transform .08s;
+  cursor:default;user-select:none;
+}
+.slot.tie{color:#6b5c46;font-size:15px}
+.slot.rest{color:#7a5b52}
+.slot.on{background:var(--slot-on);color:#1d1608;transform:translateY(-2px);box-shadow:0 3px 10px rgba(224,178,77,.35)}
+.slot{cursor:pointer}
+.slot:hover{outline:1px solid var(--gold-dim)}
+.slot.start{box-shadow:inset 3px 0 0 var(--green)}
+.slot.start.on{box-shadow:inset 3px 0 0 var(--green),0 3px 10px rgba(224,178,77,.35)}
+.cell .foot{
+  height:15px;display:flex;justify-content:flex-end;align-items:center;
+  font-size:10.5px;color:var(--gold-dim);padding-right:3px;letter-spacing:.5px;
+}
+.cell .foot .chap{color:var(--red)}
+.empty{color:var(--dim);font-size:13.5px;padding:14px 2px}
+
+/* help */
+details summary{cursor:pointer;font-size:14px;color:var(--gold);letter-spacing:1.4px;text-transform:uppercase;font-weight:700}
+details[open] summary{margin-bottom:12px}
+.help{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;font-size:13.5px}
+.help h3{font-size:13px;color:var(--gold);margin-bottom:6px}
+.help ul{margin:0;padding-left:18px}
+.help li{margin:3px 0}
+.help code{
+  background:#100e0a;border:1px solid var(--line);border-radius:5px;
+  padding:1px 6px;font-size:15px;font-family:'Sarabun','Noto Sans Thai',ui-monospace,monospace;
+}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl td{padding:4px 6px;border-bottom:1px solid var(--line)}
+.tbl td:first-child{color:var(--gold);font-size:17px;width:52px}
+.note{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.7}
+
+@media(max-width:900px){ main{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">♪</div>
+    <div>
+      <h1>NoiNoi</h1>
+      <p>ระบบเล่นโน้ตดนตรีไทย · เสียงเท่า 7 เสียง</p>
+    </div>
+  </div>
+  <nav class="pages">
+    <a href="index.html">หน้าแรก</a>
+    <a href="thai.html" class="on">โน้ตไทย</a>
+    <a href="khlui.html">ขลุ่ย</a>
+  </nav>
+  <div class="transport">
+    <button id="play" class="btn primary">▶ เล่น</button>
+    <button id="pause" class="btn" disabled>⏸ พัก</button>
+    <button id="stop" class="btn" disabled>■ หยุด</button>
+    <button id="save" class="btn ghost" title="บันทึกโน้ตพร้อมการตั้งค่าเป็นไฟล์ .json">💾 เซฟ</button>
+    <button id="open" class="btn ghost" title="เปิดไฟล์โน้ตที่เคยบันทึกไว้">📂 เปิด</button>
+    <button id="wav" class="btn ghost" title="บันทึกเสียงเป็นไฟล์ .wav">⬇ .wav</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>โน้ต</h2>
+      <select id="preset" style="width:auto"></select>
+    </div>
+    <textarea id="src" spellcheck="false"></textarea>
+    <div class="tidybar">
+      <button class="btn ghost sm" id="tidy">⌗ จัดระเบียบโน้ต</button>
+      <label>ห้อง/บรรทัด <input type="number" id="perLine" value="8" min="1" max="16" step="1"></label>
+      <span class="sep"></span>
+      <label>ขึ้นด้วย <select id="startNote" title="เปลี่ยนเสียงแรกของเพลง โน้ตทั้งเพลงจะขยับตาม"></select></label>
+      <button class="btn ghost sm" id="trDown" title="ขยับโน้ตทั้งเพลงลง 1 ขั้น">▼</button>
+      <button class="btn ghost sm" id="trUp" title="ขยับโน้ตทั้งเพลงขึ้น 1 ขั้น">▲</button>
+      <span class="subhint" id="lsNote"></span>
+    </div>
+    <div class="keys" id="keys"></div>
+    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>ตั้งค่า</h2></div>
+    <div class="ctl">
+      <div class="field">
+        <label>ความเร็ว <b><span id="tempoV">60</span> ห้อง/นาที</b></label>
+        <input type="range" id="tempo" min="20" max="180" step="1" value="60">
+      </div>
+      <div class="field">
+        <label>เครื่องดนตรี</label>
+        <select id="inst">
+          <option value="ranat_ek">ระนาดเอก</option>
+          <option value="ranat_thum">ระนาดทุ้ม</option>
+          <option value="khong">ฆ้องวงใหญ่</option>
+          <option value="chakhe">จะเข้</option>
+          <option value="khlui">ขลุ่ยเพียงออ</option>
+          <option value="saw">ซอด้วง</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>ระบบเสียง</label>
+          <select id="tuning">
+            <option value="7tet">เสียงเท่า 7 เสียง (ไทย)</option>
+            <option value="12tet">เทียบเปียโน (12-TET)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ทาง / คีย์ <b><span id="keyHz">528.0</span> Hz</b></label>
+          <div class="pair">
+          <select id="key">
+            <optgroup label="ทางไทย — ขั้นละ 1/7 คู่แปด">
+              <option value="t0" selected>ทางเพียงออล่าง (ด)</option>
+              <option value="t1">ทางใน (ร)</option>
+              <option value="t2">ทางกลาง (ม)</option>
+              <option value="t3">ทางเพียงออบน (ฟ)</option>
+              <option value="t4">ทางนอก (ซ)</option>
+              <option value="t5">ทางกลางแหบ (ล)</option>
+              <option value="t6">ทางชวา (ท)</option>
+            </optgroup>
+            <optgroup label="คีย์สากล — ขั้นละครึ่งเสียง">
+              <option value="w0">C</option>
+              <option value="w1">C♯ / D♭</option>
+              <option value="w2">D</option>
+              <option value="w3">D♯ / E♭</option>
+              <option value="w4">E</option>
+              <option value="w5">F</option>
+              <option value="w6">F♯ / G♭</option>
+              <option value="w7">G</option>
+              <option value="w8">G♯ / A♭</option>
+              <option value="w9">A</option>
+              <option value="w10">A♯ / B♭</option>
+              <option value="w11">B</option>
+            </optgroup>
+          </select>
+          <select id="oct" title="ช่วงเสียง (ออกเทฟ) — 4 คือช่วงเดียวกับโดกลาง">
+            <option value="2">ช่วง 2</option>
+            <option value="3">ช่วง 3</option>
+            <option value="4" selected>ช่วง 4</option>
+            <option value="5">ช่วง 5</option>
+            <option value="6">ช่วง 6</option>
+          </select>
+          </div>
+          <div class="subhint" id="keyNote"></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label id="refLab">เสียงอ้างอิง — <b>ด</b> ของทางเพียงออล่าง (Hz)</label>
+          <input type="number" id="base" value="264" min="80" max="700" step="1">
+        </div>
+        <div class="field">
+          <label>อัตราจังหวะ (ฉิ่ง)</label>
+          <select id="chan">
+            <option value="1">ชั้นเดียว</option>
+            <option value="2" selected>สองชั้น</option>
+            <option value="3">สามชั้น</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>ระดับเสียง <b><span id="volV">80</span>%</b></label>
+        <input type="range" id="vol" min="0" max="100" step="1" value="80">
+      </div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>
+        <label class="check"><input type="checkbox" id="loop"> เล่นวน</label>
+        <label class="check"><input type="checkbox" id="follow" checked> เลื่อนจอตามโน้ต</label>
+      </div>
+      <div class="field">
+        <label>ระดับเสียงฉิ่ง–ฉับ <b><span id="chingVolV">25</span>%</b></label>
+        <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+      </div>
+    </div>
+  </section>
+
+  <section class="panel wide">
+    <div class="panel-head">
+      <h2>บรรทัดโน้ต</h2>
+      <span class="meta" id="meta"></span>
+    </div>
+    <div class="score" id="score"></div>
+  </section>
+
+  <section class="panel wide">
+    <details>
+      <summary>วิธีเขียนโน้ต</summary>
+      <div class="help">
+        <div>
+          <h3>ตัวโน้ต</h3>
+          <table class="tbl">
+            <tr><td>ด</td><td>โด — พิมพ์ <code>ด</code> หรือ <code>d</code></td></tr>
+            <tr><td>ร</td><td>เร — <code>r</code></td></tr>
+            <tr><td>ม</td><td>มี — <code>m</code></td></tr>
+            <tr><td>ฟ</td><td>ฟา — <code>f</code></td></tr>
+            <tr><td>ซ</td><td>ซอล — <code>s</code></td></tr>
+            <tr><td>ล</td><td>ลา — <code>l</code></td></tr>
+            <tr><td>ท</td><td>ที — <code>t</code></td></tr>
+          </table>
+        </div>
+        <div>
+          <h3>ระดับเสียงสูง–ต่ำ</h3>
+          <ul>
+            <li><code>ดํ</code> นิคหิตข้างบน = เสียงสูงขึ้น 1 ช่วงคู่แปด (พิมพ์ <code>d'</code> ก็ได้)</li>
+            <li><code>ดฺ</code> พินทุข้างล่าง = เสียงต่ำลง 1 ช่วงคู่แปด (พิมพ์ <code>d,</code> ก็ได้)</li>
+            <li>ใส่ซ้ำได้ เช่น <code>ดํํ</code> = สูงขึ้น 2 คู่แปด</li>
+          </ul>
+          <h3 style="margin-top:12px">สัญลักษณ์อื่น</h3>
+          <ul>
+            <li><code>-</code> ยืดเสียงตัวก่อนหน้าออกไป</li>
+            <li><code>0</code> หยุดเสียง (ตัดเสียงที่ค้างอยู่)</li>
+            <li><code>//</code> หรือ <code>#</code> ท้ายบรรทัด = คำอธิบาย ไม่ถูกเล่น</li>
+          </ul>
+        </div>
+        <div>
+          <h3>การจัดห้องและบรรทัด</h3>
+          <ul>
+            <li>ตัวอักษรที่เขียนติดกันคือ <b>1 ห้อง</b> เช่น <code>ดรมฟ</code> = 4 ช่อง</li>
+            <li>เว้นวรรค (หรือ <code>|</code>) = ขึ้นห้องใหม่</li>
+            <li>1 ห้องกินเวลาเท่ากันเสมอ ใส่ 2 หรือ 4 ตัวก็ได้ ระบบจะแบ่งเวลาให้เอง</li>
+            <li><b>ขึ้นด้วย</b> กับปุ่ม ▲ ▼ — <b>เขียนโน้ตใหม่ทั้งเพลง</b>ขึ้นหรือลงทีละขั้น เพลงที่ขึ้นด้วย <code>ซ</code> เลือก <code>ล</code> จะกลายเป็นโน้ตของ ล ทั้งเพลง เลย <code>ท</code> แล้วขึ้นคู่แปดให้เอง คำอธิบายและการจัดวางคงเดิม</li>
+            <li>ต่างจาก <b>ทาง / คีย์</b> ตรงที่อันนั้นเปลี่ยนเฉพาะระดับเสียงที่ได้ยิน โน้ตบนหน้าจอเหมือนเดิม ส่วนอันนี้เปลี่ยนตัวโน้ตจริง ๆ ไว้ใช้ตอนต้องอ่านโน้ตตามนิ้วที่จับ</li>
+            <li>ขึ้นบรรทัดใหม่ = บรรทัดถัดไป (นิยม 8 ห้อง/บรรทัด)</li>
+          </ul>
+          <p class="note">ตัวอย่าง<br><code>ดรมฟ ซลทดํ ดํทลซ ฟมรด</code></p>
+        </div>
+        <div>
+          <h3>เรื่องเสียงและจังหวะ</h3>
+          <ul>
+            <li><b>เสียงเท่า 7 เสียง</b> — แบ่งคู่แปดออกเป็น 7 ขั้นเท่ากัน ขั้นละ 171.43 เซนต์ ตามระบบเสียงดนตรีไทย ต่างจากเปียโนที่ ม–ฟ และ ท–ดํ ห่างครึ่งเสียง</li>
+            <li><b>ทาง / คีย์</b> — กำหนดว่าตัว <code>ด</code> ไปตกที่เสียงใด โดยโน้ตที่เขียนไว้ไม่เปลี่ยน เลือกได้ทั้ง <i>ทางไทย</i> (ขยับทีละ 1/7 คู่แปด อ้างอิงจาก ด ของทางเพียงออล่าง) และ <i>คีย์สากล</i> (ขยับทีละครึ่งเสียง อ้างอิงจาก A4) — เป็นคนละเรื่องกับ <b>ระบบเสียง</b> ซึ่งกำหนดระยะห่างของอีก 6 เสียง จึงเลือกคีย์สากลแต่ยังใช้เสียงเท่า 7 เสียงได้</li>
+            <li><b>ความถี่ที่แสดง</b> คือเสียง <code>ด</code> ที่ได้ยินจริง รวมช่วงเสียงของเครื่องแล้ว — ระนาดเอก ขลุ่ย ซอ สูงขึ้น 1 คู่แปด, ระนาดทุ้ม ต่ำลง 1 คู่แปด, ฆ้องวงใหญ่ และจะเข้ อยู่ระดับเดียวกับเสียงอ้างอิง</li>
+            <li><b>ฉิ่ง–ฉับ</b> ลงท้ายห้อง: ชั้นเดียว = ฉิ่งกลางห้อง ฉับท้ายห้อง · สองชั้น = ฉิ่งห้องคี่ ฉับห้องคู่ · สามชั้น = ห่างออกไปอีกเท่าตัว</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+</main>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* ══════════ 1. ระบบโน้ตไทย ══════════ */
+const NOTE   = ['ด','ร','ม','ฟ','ซ','ล','ท'];
+const ASCII  = 'drmfslt';
+const UP     = 'ํ';   // นิคหิต  = สูงขึ้น 1 คู่แปด
+const DOWN   = 'ฺ';   // พินทุ   = ต่ำลง 1 คู่แปด
+const SEMI   = [0,2,4,5,7,9,11];   // ใช้เมื่อเทียบเปียโน
+
+const glyph = (deg,oct) =>
+  NOTE[deg] + (oct>0 ? UP.repeat(oct) : '') + (oct<0 ? DOWN.repeat(-oct) : '');
+
+function tokenizeCell(str){
+  const out=[];
+  for(let i=0;i<str.length;i++){
+    const ch=str[i];
+    if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie'}); continue; }
+    if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest'}); continue; }
+    let deg=NOTE.indexOf(ch);
+    if(deg<0) deg=ASCII.indexOf(ch.toLowerCase());
+    if(deg<0) continue;                     // ข้ามอักขระที่ไม่รู้จัก
+    let oct=0;
+    while(i+1<str.length){
+      const n=str[i+1];
+      if(n===UP||n==="'"||n==='^'){ oct++; i++; }
+      else if(n===DOWN||n===','||n==='_'){ oct--; i++; }
+      else break;
+    }
+    out.push({type:'note',deg,oct});
+  }
+  return out;
+}
+
+function parseScore(text){
+  const lines=[];
+  for(const raw of text.split(/\r?\n/)){
+    const body = raw.split('//')[0].split('#')[0].trim();
+    if(!body) continue;
+    const cells = body.split(/[\s|]+/).filter(Boolean)
+      .map(tok => ({raw:tok, syms:tokenizeCell(tok)}))
+      .filter(c => c.syms.length);
+    if(cells.length) lines.push(cells);
+  }
+  return lines;
+}
+
+const freqOf = (deg,oct,o) => o.tuning==='7tet'
+  ? o.base * Math.pow(2, oct + deg/7)          // เสียงเท่า 7 เสียง
+  : o.base * Math.pow(2, oct + SEMI[deg]/12);  // เทียบเปียโน
+
+/* ══════════ 2. สร้างลำดับเหตุการณ์ ══════════ */
+let steps=[];                      // ทุกช่องของทั้งเพลง เรียงต่อกัน
+
+const slotDur = (o,st) => (60/o.tempo)/st.n;
+
+// ความยาวโน้ต = ช่องตัวเอง + ช่องยืดเสียง (-) ที่ตามมา
+function noteDur(o,i){
+  let d = slotDur(o,steps[i]);
+  for(let j=i+1;j<steps.length && steps[j].sym.type==='tie';j++) d += slotDur(o,steps[j]);
+  return d;
+}
+
+// ตำแหน่งของเครื่องกำกับจังหวะ วัดเป็นสัดส่วนของห้อง (0 = ต้นห้อง, .75 = ช่องที่ 4 จาก 4)
+// ผูกกับตำแหน่งในห้อง ไม่ใช่จำนวนช่องที่เขียน ห้องที่มี 1, 2 หรือ 4 ช่องจึงได้ฉิ่งตรงกัน
+const F_CHING = .25, F_CHAP = .75;
+
+function percOf(o,ci){
+  const out=[];
+  if(o.ching){
+    if(o.chan===1) out.push({frac:F_CHING,kind:'ching'},{frac:F_CHAP,kind:'chap'});
+    else if(o.chan===2) out.push({frac:F_CHAP,kind: ci%2===0 ? 'ching' : 'chap'});
+    else if(ci%4===1)   out.push({frac:F_CHAP,kind:'ching'});
+    else if(ci%4===3)   out.push({frac:F_CHAP,kind:'chap'});
+  }
+  return out;
+}
+
+// ตัวไหนตกอยู่ในช่องนี้ พร้อมระยะเลื่อน (คิดเป็นสัดส่วนของห้อง)
+function percAt(o,ci,si,n){
+  const lo=si/n, hi=(si+1)/n;
+  return percOf(o,ci)
+    .filter(e => e.frac>=lo && e.frac<hi)
+    .map(e => ({kind:e.kind, dt:e.frac-lo}));
+}
+
+// สแนปช็อตทั้งเพลง — ใช้ตอนบันทึก .wav และคำนวณความยาว
+function buildEvents(o){
+  const notes=[],perc=[],marks=[];
+  let t=0;
+  for(let i=0;i<steps.length;i++){
+    const st=steps[i];
+    marks.push(t);
+    if(st.sym.type==='note') notes.push({t,dur:noteDur(o,i),deg:st.sym.deg,oct:st.sym.oct});
+    const spc=60/o.tempo;
+    for(const e of percAt(o,st.cellIdx,st.si,st.n)) perc.push({t:t+e.dt*spc, kind:e.kind});
+    t += slotDur(o,st);
+  }
+  return {notes,perc,marks,total:t,
+          cells: steps.length ? steps[steps.length-1].cellIdx+1 : 0};
+}
+
+/* ══════════ 3. เสียง ══════════ */
+const INST = {
+  ranat_ek  :{type:'perc', oct: 1, attack:.002, decay:.42, click:1.0,
+              partials:[[1,1],[3.02,.46],[6.24,.22],[10.1,.09]]},
+  ranat_thum:{type:'perc', oct:-1, attack:.004, decay:.80, click:.55,
+              partials:[[1,1],[2.88,.30],[5.71,.11]]},
+  khong     :{type:'perc', oct: 0, attack:.006, decay:1.45, click:.35,
+              partials:[[1,1],[2.41,.50],[4.18,.26],[6.93,.11]]},
+  chakhe    :{type:'perc', oct: 0, attack:.002, decay:1.05, click:.85,
+              partials:[[1,1],[2,.52],[3,.30],[4,.16],[5,.08],[6,.04]]},
+  khlui     :{type:'sus',  oct: 1, wave:'triangle', attack:.055, release:.10,
+              vib:4.6, vibDepth:.005, breath:.055, filter:6},
+  saw       :{type:'sus',  oct: 1, wave:'sawtooth', attack:.075, release:.11,
+              vib:5.6, vibDepth:.010, breath:.012, filter:3.2},
+};
+
+/* ---- ตัวอย่างเสียงฉิ่ง–ฉับ (ฝังไว้ในไฟล์) ---- */
+const CHING_MP3 = {
+  ching:'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',
+  chap :'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oiEh6W//////BbEtTEFNRTMuMTAwVVX/+xBk3Y/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7EGTdj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//sQZN2P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+xBk3Y/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7EGTdj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//sQZN2P8AAAaQAAAAgAAA0gAAABAAAB/gAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+xBk/4DwwyBHGAEWAAAADSAAAAEIaOsTIJh4QAAANIAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7EGTdj/AAAH+AAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV',
+};
+const sampleCache = new WeakMap();
+function b64ToBuf(b64){
+  const bin=atob(b64), u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+  return u8.buffer;
+}
+async function ensureSamples(ctx){
+  let s=sampleCache.get(ctx);
+  if(s) return s;
+  s={};
+  for(const k of ['ching','chap']){
+    try{ s[k]=await ctx.decodeAudioData(b64ToBuf(CHING_MP3[k])); }
+    catch(e){ s[k]=null; console.warn('ถอดรหัสเสียง '+k+' ไม่สำเร็จ ใช้เสียงสังเคราะห์แทน',e); }
+  }
+  sampleCache.set(ctx,s);
+  return s;
+}
+
+const noiseCache = new WeakMap();
+function noise(ctx){
+  let b = noiseCache.get(ctx);
+  if(!b){
+    b = ctx.createBuffer(1, Math.floor(ctx.sampleRate*2), ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    noiseCache.set(ctx,b);
+  }
+  return b;
+}
+function makeIR(ctx){
+  const len = Math.floor(ctx.sampleRate*1.7);
+  const buf = ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let c=0;c<2;c++){
+    const d = buf.getChannelData(c);
+    for(let i=0;i<len;i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/len,2.8);
+  }
+  return buf;
+}
+function buildGraph(ctx,o){
+  const master = ctx.createGain(); master.gain.value = o.volume;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value=-14; comp.ratio.value=3.5; comp.release.value=.28;
+  const mix = ctx.createGain();
+  const dry = ctx.createGain(); dry.gain.value=.92;
+  const wet = ctx.createGain(); wet.gain.value=.17;
+  const conv = ctx.createConvolver(); conv.buffer = makeIR(ctx);
+  mix.connect(dry); dry.connect(comp);
+  mix.connect(conv); conv.connect(wet); wet.connect(comp);
+  comp.connect(master); master.connect(ctx.destination);
+  // บัสแยก: โน้ต / ฉิ่ง–ฉับ
+  const bus   = ctx.createGain();
+  const ching = ctx.createGain(); ching.gain.value = o.chingVol;
+  bus.connect(mix); ching.connect(mix);
+  return {bus,ching,mix,master};
+}
+
+function burst(ctx,dest,t0,opt){
+  const n=ctx.createBufferSource(); n.buffer=noise(ctx);
+  const f=ctx.createBiquadFilter(); f.type=opt.type; f.frequency.value=opt.freq;
+  if(opt.q) f.Q.value=opt.q;
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(opt.gain,t0);
+  g.gain.exponentialRampToValueAtTime(.0001,t0+opt.decay);
+  n.connect(f); f.connect(g); g.connect(dest);
+  n.start(t0, Math.random()*1.5); n.stop(t0+opt.decay+.02);
+}
+
+function playPerc(ctx,bus,freq,t0,dur,P){
+  const d = Math.max(P.decay, Math.min(dur*.95, P.decay*3.2));
+  const g = ctx.createGain(); g.connect(bus);
+  g.gain.setValueAtTime(.0001,t0);
+  g.gain.linearRampToValueAtTime(.85,t0+P.attack);
+  g.gain.exponentialRampToValueAtTime(.0006,t0+d);
+  g.gain.linearRampToValueAtTime(0,t0+d+.02);
+  P.partials.forEach((pr,i)=>{
+    const o=ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(freq*pr[0],t0);
+    const pg=ctx.createGain();
+    pg.gain.setValueAtTime(pr[1]*.26,t0);
+    pg.gain.exponentialRampToValueAtTime(.0001, t0 + d/(1+i*.8));
+    o.connect(pg); pg.connect(g);
+    o.start(t0); o.stop(t0+d+.06);
+  });
+  if(P.click) burst(ctx,g,t0,{type:'bandpass',freq:Math.min(freq*5,9500),q:1.1,gain:.20*P.click,decay:.045});
+}
+
+function playSus(ctx,bus,freq,t0,dur,P){
+  const d = Math.max(dur,.09), a=P.attack, r=P.release;
+  const g = ctx.createGain(); g.connect(bus);
+  g.gain.setValueAtTime(.0001,t0);
+  g.gain.linearRampToValueAtTime(.50,t0+a);
+  g.gain.setValueAtTime(.50, t0+Math.max(a,d-r*.5));
+  g.gain.exponentialRampToValueAtTime(.0006,t0+d+r);
+  g.gain.linearRampToValueAtTime(0,t0+d+r+.02);
+  const o = ctx.createOscillator(); o.type=P.wave;
+  o.frequency.setValueAtTime(freq,t0);
+  const lfo=ctx.createOscillator(); lfo.frequency.value=P.vib;
+  const lg=ctx.createGain();
+  lg.gain.setValueAtTime(0,t0);
+  lg.gain.linearRampToValueAtTime(freq*P.vibDepth, t0+Math.min(.3,d));
+  lfo.connect(lg); lg.connect(o.frequency);
+  const f=ctx.createBiquadFilter(); f.type='lowpass';
+  f.frequency.value=Math.min(freq*P.filter,13000); f.Q.value=.7;
+  o.connect(f); f.connect(g);
+  o.start(t0); o.stop(t0+d+r+.06);
+  lfo.start(t0); lfo.stop(t0+d+r+.06);
+  if(P.breath) burst(ctx,g,t0,{type:'bandpass',freq:freq*2,q:.8,gain:P.breath,decay:Math.min(d,.9)});
+}
+
+function playTone(ctx,bus,freq,t0,dur,key){
+  const P = INST[key] || INST.ranat_ek;
+  const f = freq*Math.pow(2,P.oct||0);
+  (P.type==='perc' ? playPerc : playSus)(ctx,bus,f,t0,dur,P);
+}
+
+function playChing(ctx,bus,t0,damped){
+  const cached = sampleCache.get(ctx);
+  const buf = cached && cached[damped?'chap':'ching'];
+  if(buf){
+    const src=ctx.createBufferSource(); src.buffer=buf;
+    const g=ctx.createGain(); g.gain.value = damped ? .95 : .85;
+    src.connect(g); g.connect(bus);
+    src.start(t0);
+    return;
+  }
+  const d = damped ? .13 : .85;
+  const g = ctx.createGain(); g.connect(bus);
+  g.gain.setValueAtTime(.0001,t0);
+  g.gain.linearRampToValueAtTime(damped?.52:.44, t0+.002);
+  g.gain.exponentialRampToValueAtTime(.0005,t0+d);
+  g.gain.linearRampToValueAtTime(0,t0+d+.02);
+  [1,1.62,2.34,3.11,4.02,5.21].forEach((r,i)=>{
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=2350*r;
+    const pg=ctx.createGain();
+    pg.gain.setValueAtTime(.15/(1+i*.65),t0);
+    pg.gain.exponentialRampToValueAtTime(.0001, t0 + d/(1+i*.35));
+    o.connect(pg); pg.connect(g); o.start(t0); o.stop(t0+d+.05);
+  });
+  burst(ctx,g,t0,{type:'highpass',freq:5400,gain:.18,decay:damped?.05:.22});
+}
+
+function scheduleAll(ctx,g,ev,o,t0){
+  for(const n of ev.notes) playTone(ctx,g.bus,freqOf(n.deg,n.oct,o),t0+n.t,n.dur,o.inst);
+  for(const p of ev.perc){
+    playChing(ctx,g.ching,t0+p.t,p.kind==='chap');
+  }
+}
+
+/* ══════════ 4. ตัวอย่างโน้ต ══════════ */
+const PRESETS = [
+  {id:'scale', name:'แบบฝึกหัด — ไล่เสียงขึ้นลง', chan:'2', tempo:56, text:
+`ดรมฟ ซลทดํ รํมํฟํซํ ลํทํ-- ทํลํซํฟํ มํรํดํท ลซฟม รด--
+ดฺรฺมฺฟฺ ซฺลฺทฺด รมฟซ ลทดํ- ทลซฟ มรดทฺ ลฺซฺฟฺมฺ รฺดฺ--`},
+
+  {id:'kep', name:'แบบฝึกหัด — ทางเก็บ (สลับคู่แปด)', chan:'2', tempo:76, text:
+`ดํดดํด รํดรํด มํดมํด ฟํดฟํด ซํดซํด ลํดลํด ทํดทํด ดํดดํด
+ทํดทํด ลํดลํด ซํดซํด ฟํดฟํด มํดมํด รํดรํด ดํดดํด ด---`},
+
+  {id:'kro', name:'แบบฝึกหัด — ทางกรอ (ยืดเสียง)', chan:'3', tempo:44, text:
+`ด--- ร--- ม--- ฟ--- ซ--- ล--- ท--- ดํ---
+ดํ--- ท--- ล--- ซ--- ฟ--- ม--- ร--- ด---`},
+
+  {id:'blank', name:'— เริ่มใหม่ (ว่าง) —', chan:'2', tempo:60, text:
+`---- ---- ---- ---- ---- ---- ---- ----`},
+];
+
+/* ══════════ 5. UI ══════════ */
+const srcEl=$('#src'), scoreEl=$('#score'), metaEl=$('#meta');
+let slotEls=[], curScore=[];
+
+function readOpts(){
+  // สองเรื่องนี้แยกกันเป็นอิสระ:
+  //   key    = ตัว ด ไปตกที่ความถี่ใด
+  //   tuning = อีก 6 เสียงเรียงห่างจาก ด อย่างไร
+  const tuning = $('#tuning').value;
+  const key    = $('#key').value;            // 't0'..'t6' = ทางไทย, 'w0'..'w11' = คีย์สากล
+  const west   = key[0]==='w';
+  const k      = +key.slice(1);
+  const ref    = +$('#base').value || (west ? 440 : 264);
+  const octSh  = (+$('#oct').value) - 4;     // ยกทั้งคีย์ขึ้น–ลงเป็นคู่แปด
+  const base   = (west
+    ? ref*Math.pow(2,(k-9)/12)   // ref = A4 ; k: 0=C .. 11=B
+    : ref*Math.pow(2, k/7)       // ref = ด ของทางเพียงออล่าง
+  ) * Math.pow(2, octSh);
+  return {
+    tempo : +$('#tempo').value,
+    inst  : $('#inst').value,
+    tuning, key, west, ref, base,
+    chan  : +$('#chan').value,
+    ching : $('#ching').checked,
+    loop  : $('#loop').checked,
+    volume: (+$('#vol').value)/100,
+    chingVol: (+$('#chingVol').value)/100,
+  };
+}
+
+function fmtTime(s){
+  const m=Math.floor(s/60), r=Math.round(s%60);
+  return m + ':' + String(r).padStart(2,'0');
+}
+
+function render(){
+  const o = readOpts();
+  curScore = parseScore(srcEl.value);
+  scoreEl.innerHTML=''; slotEls=[]; steps=[];
+  if(!curScore.length){
+    scoreEl.innerHTML = '<p class="empty">ยังไม่มีโน้ต — พิมพ์โน้ตในช่องด้านบน หรือเลือกตัวอย่าง</p>';
+    metaEl.textContent=''; return;
+  }
+  let ci=0;
+  curScore.forEach((cells,li)=>{
+    const line=document.createElement('div'); line.className='line';
+    const num=document.createElement('div'); num.className='linenum'; num.textContent=li+1;
+    const wrap=document.createElement('div'); wrap.className='cells';
+    cells.forEach(cell=>{
+      const c=document.createElement('div'); c.className='cell';
+      const slots=document.createElement('div'); slots.className='slots';
+      const n=cell.syms.length;
+      cell.syms.forEach((sym,si)=>{
+        const b=document.createElement('div'); b.className='slot';
+        if(sym.type==='note') b.textContent = glyph(sym.deg,sym.oct);
+        else if(sym.type==='rest'){ b.classList.add('rest'); b.textContent='๐'; }
+        else { b.classList.add('tie'); b.textContent='–'; }
+        const idx = slotEls.length;
+        b.title = 'คลิกเพื่อตั้งเป็นจุดเริ่มเล่น';
+        b.onclick = ()=>setStart(idx);
+        slots.appendChild(b); slotEls.push(b);
+        steps.push({sym, cellIdx:ci, si, n});
+      });
+      const foot=document.createElement('div'); foot.className='foot';
+      if(o.ching){
+        const ks = percOf(o,ci).map(e=>e.kind);
+        foot.innerHTML = ks.includes('chap')  ? '<span class="chap">ฉับ</span>'
+                       : ks.includes('ching') ? 'ฉิ่ง' : '';
+      }
+      c.appendChild(slots); c.appendChild(foot); wrap.appendChild(c);
+      ci++;
+    });
+    line.appendChild(num); line.appendChild(wrap); scoreEl.appendChild(line);
+  });
+  if(startStep >= steps.length) startStep = 0;
+  markStart();
+  const fd = firstDeg(), selN = $('#startNote');
+  if(selN && selN.options.length){
+    selN.disabled = fd < 0;
+    if(fd >= 0) selN.value = String(fd);
+  }
+  updateMeta();
+}
+
+// จุดเริ่มเล่น — คลิกช่องเดิมซ้ำเพื่อกลับไปเริ่มต้นบรรทัดแรก
+function setStart(i){
+  startStep = (startStep === i) ? 0 : i;
+  pausedAt = null;
+  markStart();
+  if(!playing) $('#play').textContent = '▶ เล่น';
+}
+function markStart(){
+  for(const el of slotEls) el.classList.remove('start');
+  if(slotEls[startStep]) slotEls[startStep].classList.add('start');
+}
+
+// อัปเดตเฉพาะบรรทัดสรุป ไม่ต้องสร้าง DOM ใหม่ (ใช้ตอนลากสไลเดอร์ความเร็ว)
+function updateMeta(){
+  if(!steps.length){ metaEl.textContent=''; return; }
+  const ev = buildEvents(readOpts());
+  metaEl.textContent = curScore.length+' บรรทัด · '+ev.cells+' ห้อง · '+ev.notes.length+' เสียง · ~'+fmtTime(ev.total);
+}
+
+/* ---------- ขยับคีย์ของโน้ต ---------- */
+// เขียนโน้ตใหม่ทีละตัวอักษร เพื่อรักษาการจัดวาง เว้นวรรค วงเล็บ และคำอธิบายไว้เหมือนเดิม
+function transposeText(text, k){
+  if(!k) return text;
+  const out = [];
+  for(const raw of text.split('\n')){
+    let cut = raw.length;
+    const a = raw.indexOf('//'), b = raw.indexOf('#');
+    if(a >= 0) cut = Math.min(cut, a);
+    if(b >= 0) cut = Math.min(cut, b);
+    const body = raw.slice(0, cut), rest = raw.slice(cut);
+    let line = '';
+    for(let i=0;i<body.length;i++){
+      const ch = body[i];
+      let deg = NOTE.indexOf(ch);
+      if(deg < 0) deg = ASCII.indexOf(ch.toLowerCase());
+      if(deg < 0){ line += ch; continue; }
+      let oct=0, kh=false, j=i;
+      while(j+1 < body.length){
+        const n = body[j+1];
+        if(n===UP||n==="'"||n==='^'){ oct++; j++; }
+        else if(n===DOWN||n===','||n==='_'){ oct--; j++; }
+        else if(n==='*'){ kh=true; j++; }
+        else break;
+      }
+      const t = deg + k;                       // เลย ท แล้วขึ้นคู่แปด ต่ำกว่า ด แล้วลงคู่แปด
+      line += glyph(((t%7)+7)%7, oct + Math.floor(t/7)) + (kh ? '*' : '');
+      i = j;
+    }
+    out.push(line + rest);
+  }
+  return out.join('\n');
+}
+
+// เสียงแรกของเพลง ใช้บอกว่าตอนนี้ขึ้นด้วยตัวอะไร
+function firstDeg(){
+  for(const st of steps){
+    if(st.sym.type==='note') return st.sym.deg;
+    if(st.sym.type==='group') for(const x of st.sym.syms) if(x.type==='note') return x.deg;
+  }
+  return -1;
+}
+
+function applyTranspose(k){
+  if(!k || !steps.length) return;
+  srcEl.value = transposeText(srcEl.value, k);
+  render();
+}
+
+/* ---------- จัดระเบียบโน้ต ---------- */
+// เขียนห้องกลับเป็นข้อความ และขยายให้ครบ 4 ช่องเมื่อทำได้โดยเสียงไม่เปลี่ยน
+function cellText(syms){
+  const g = s => s.type==='note' ? glyph(s.deg,s.oct) : (s.type==='rest' ? '0' : '-');
+  let a = syms;
+  if(syms.length===1 || syms.length===2){
+    const rep = 4/syms.length;
+    a = [];
+    for(const s of syms){ a.push(s); for(let k=1;k<rep;k++) a.push({type:'tie'}); }
+  }
+  return a.map(g).join('');
+}
+
+function tidy(){
+  const per = Math.max(1, Math.min(16, +$('#perLine').value || 8));
+  const src = srcEl.value.split(/\r?\n/);
+  const cells=[], notes=[];          // notes[li] = คำอธิบายท้ายบรรทัดเดิม
+  src.forEach((line,li)=>{
+    const m = line.match(/(?:\/\/|#)(.*)$/);
+    notes[li] = m ? '// '+m[1].trim() : '';
+    const body = line.split('//')[0].split('#')[0].trim();
+    for(const tok of body.split(/[\s|]+/).filter(Boolean)){
+      const syms = tokenizeCell(tok);
+      if(syms.length) cells.push({txt:cellText(syms), src:li});
+    }
+  });
+  if(!cells.length) return;
+
+  const lastOf = {};                 // ห้องสุดท้ายของแต่ละบรรทัดเดิมไปอยู่ลำดับที่เท่าไร
+  cells.forEach((c,i)=>{ lastOf[c.src]=i; });
+
+  const out=[];
+  for(let i=0;i<cells.length;i+=per){
+    let line = cells.slice(i,i+per).map(c=>c.txt).join(' ');
+    const cm = Object.keys(lastOf)
+      .filter(k => lastOf[k]>=i && lastOf[k]<i+per && notes[k])
+      .map(k => notes[k]);
+    if(cm.length) line += '   ' + cm.join(' ');
+    out.push(line);
+  }
+  // บรรทัดที่มีแต่คำอธิบาย ไม่มีโน้ต — เก็บไว้ท้ายไฟล์ ไม่ให้หาย
+  const orphan = notes.filter((c,li)=> c && lastOf[li]===undefined);
+  if(orphan.length) out.push(orphan.join(' '));
+
+  srcEl.value = out.join('\n');
+  render();
+}
+
+/* ---------- แป้นโน้ต ---------- */
+function insert(txt){
+  const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
+  el.value = el.value.slice(0,s) + txt + el.value.slice(e);
+  el.selectionStart = el.selectionEnd = s + txt.length;
+  el.focus(); render();
+}
+(function buildKeys(){
+  const box=$('#keys');
+  [[1,'สูง'],[0,'กลาง'],[-1,'ต่ำ']].forEach(pair=>{
+    const oct=pair[0];
+    const row=document.createElement('div'); row.className='keyrow';
+    const tag=document.createElement('span'); tag.className='tag'; tag.textContent=pair[1];
+    row.appendChild(tag);
+    NOTE.forEach((_,deg)=>{
+      const b=document.createElement('button'); b.className='key';
+      b.textContent = glyph(deg,oct);
+      b.onclick = ()=>{ preview(deg,oct); insert(glyph(deg,oct)); };
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  });
+  const row=document.createElement('div'); row.className='keyrow';
+  const tag=document.createElement('span'); tag.className='tag'; tag.textContent='อื่น ๆ';
+  row.appendChild(tag);
+  [['–','-','ยืดเสียง'],['๐','0','หยุดเสียง'],['ห้องใหม่',' ',''],['บรรทัดใหม่','\n','']].forEach(k=>{
+    const b=document.createElement('button');
+    b.className = k[0].length>1 ? 'key util' : 'key';
+    b.textContent=k[0]; if(k[2]) b.title=k[2];
+    b.onclick=()=>insert(k[1]);
+    row.appendChild(b);
+  });
+  const del=document.createElement('button'); del.className='key util'; del.textContent='⌫ ลบ';
+  del.onclick=()=>{
+    const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
+    if(s===e && s>0){ el.value=el.value.slice(0,s-1)+el.value.slice(s); el.selectionStart=el.selectionEnd=s-1; }
+    else { el.value=el.value.slice(0,s)+el.value.slice(e); el.selectionStart=el.selectionEnd=s; }
+    el.focus(); render();
+  };
+  row.appendChild(del);
+  box.appendChild(row);
+})();
+
+/* ---------- เครื่องเล่น ---------- */
+const LOOKAHEAD = .25;   // ตั้งคิวล่วงหน้า (วินาที)
+const TICK_MS   = 40;    // รอบตรวจของตัวตั้งคิว
+
+let ac=null, graph=null, previewG=null, playing=false;
+let stepIdx=0, nextTime=0, endTime=Infinity, hiQ=[], schedTimer=0, lastEl=null, raf=0, startToken=0;
+let startStep=0, pausedAt=null, curStep=0;   // จุดเริ่มเล่น / จุดที่พักไว้ / ช่องที่กำลังดัง
+
+function ctxOn(){
+  if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)();
+  if(ac.state==='suspended') ac.resume();
+  return ac;
+}
+function preview(deg,oct){
+  const o=readOpts(); const c=ctxOn();
+  if(!previewG || previewG.ctx!==c) previewG = Object.assign(buildGraph(c,o),{ctx:c});
+  previewG.master.gain.setTargetAtTime(o.volume, c.currentTime, .01);
+  const g = (graph && playing) ? graph : previewG;
+  playTone(c,g.bus,freqOf(deg,oct,o),c.currentTime+.01,.5,o.inst);
+}
+function clearHi(){ if(lastEl){ lastEl.classList.remove('on'); lastEl=null; } }
+
+// เลื่อนจอตามบรรทัดที่กำลังเล่น — เลื่อนเมื่อขึ้นบรรทัดใหม่เท่านั้น ไม่ใช่ทุกช่อง
+let followLine=null, userScrollUntil=0;
+function follow(el){
+  if(!$('#follow').checked) return;
+  if(document.activeElement===srcEl) return;          // กำลังพิมพ์โน้ตอยู่ อย่าแย่งจอ
+  if(performance.now() < userScrollUntil) return;     // ผู้ใช้เพิ่งเลื่อนเอง
+  const line = el.closest('.line');
+  if(!line || line===followLine) return;
+  followLine = line;
+  const r = line.getBoundingClientRect();
+  if(r.top < 96 || r.bottom > window.innerHeight-48)  // เห็นอยู่แล้วก็ไม่ต้องเลื่อน
+    line.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+}
+['wheel','touchmove'].forEach(ev =>
+  window.addEventListener(ev, ()=>{ userScrollUntil = performance.now()+2500; }, {passive:true}));
+
+// ตั้งคิวทีละช่วงสั้น ๆ และอ่านค่าตั้งค่าใหม่ทุกรอบ
+// ความเร็ว เครื่องดนตรี ระบบเสียง อัตราจังหวะ ฯลฯ จึงมีผลทันทีระหว่างเล่น
+function scheduler(){
+  if(!playing || !graph) return;
+  const o = readOpts();
+  const horizon = ac.currentTime + LOOKAHEAD;
+  let guard = 0;
+  while(nextTime < horizon && guard++ < 1024){
+    if(stepIdx >= steps.length){
+      if(o.loop && steps.length) stepIdx = startStep;
+      else { endTime = nextTime; return; }
+    }
+    const st = steps[stepIdx];
+    endTime = Infinity;
+    if(st.sym.type==='note')
+      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,stepIdx),o.inst);
+    const spc=60/o.tempo;
+    for(const e of percAt(o,st.cellIdx,st.si,st.n)){
+      const pt = nextTime + e.dt*spc;
+      playChing(ac,graph.ching,pt,e.kind==='chap');
+    }
+    hiQ.push({t:nextTime,i:stepIdx});
+    nextTime += slotDur(o,st);
+    stepIdx++;
+  }
+}
+
+async function start(from){
+  render();
+  const o=readOpts();
+  if(!steps.length) return;
+  const c=ctxOn();
+  halt(); clearHi();
+  const begin = Math.min(Math.max(0, from|0), steps.length-1);
+  const token = ++startToken;
+  if(o.ching) await ensureSamples(c);
+  if(token !== startToken) return;
+  graph = buildGraph(c,o);
+  playing=true; stepIdx=begin; curStep=begin; pausedAt=null;
+  hiQ=[]; endTime=Infinity; followLine=null; userScrollUntil=0;
+  $('#pause').disabled=false; $('#pause').textContent='⏸ พัก';
+  nextTime = c.currentTime + .12;
+  $('#play').textContent='▶ เล่นใหม่'; $('#stop').disabled=false;
+  scheduler();
+  clearInterval(schedTimer); schedTimer=setInterval(scheduler,TICK_MS);
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
+}
+
+function tick(){
+  if(!playing) return;
+  const now=ac.currentTime;
+  let target=-1;
+  while(hiQ.length && hiQ[0].t<=now) target=hiQ.shift().i;
+  if(target>=0){
+    curStep = target;
+    if(slotEls[target] && slotEls[target]!==lastEl){
+      clearHi(); lastEl=slotEls[target]; lastEl.classList.add('on');
+      follow(lastEl);
+    }
+  }
+  if(now>=endTime){ stop(); return; }
+  raf=requestAnimationFrame(tick);
+}
+
+function stopAudio(){
+  if(!graph) return;
+  const g=graph, n=ac.currentTime;
+  try{
+    g.master.gain.cancelScheduledValues(n);
+    g.master.gain.setValueAtTime(g.master.gain.value,n);
+    g.master.gain.linearRampToValueAtTime(0,n+.04);
+  }catch(e){}
+  setTimeout(()=>{ try{ [g.bus,g.ching,g.mix,g.master].forEach(x=>x.disconnect()); }catch(e){} },120);
+  graph=null;
+}
+// หยุดเสียงและตัวตั้งคิว แต่ยังไม่ยุ่งกับสถานะปุ่มหรือจุดที่พักไว้
+function halt(){
+  startToken++;
+  playing=false; hiQ=[]; endTime=Infinity;
+  clearInterval(schedTimer); schedTimer=0;
+  cancelAnimationFrame(raf); stopAudio();
+}
+function stop(){
+  halt(); clearHi(); pausedAt=null;
+  $('#play').textContent='▶ เล่น';
+  $('#stop').disabled=true; $('#pause').disabled=true; $('#pause').textContent='⏸ พัก';
+}
+function pause(){
+  if(!playing) return;
+  pausedAt = curStep;                 // เล่นต่อจากช่องที่กำลังดังอยู่
+  halt();
+  $('#play').textContent='▶ เล่นต่อ';
+  $('#pause').disabled=true; $('#stop').disabled=false;
+}
+const playFrom = ()=> start(pausedAt !== null ? pausedAt : startStep);
+
+/* ---------- บันทึก .wav ---------- */
+function encodeWav(buf){
+  const ch=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  const data=new DataView(new ArrayBuffer(44+len*ch*2));
+  const str=(off,s)=>{ for(let i=0;i<s.length;i++) data.setUint8(off+i,s.charCodeAt(i)); };
+  str(0,'RIFF'); data.setUint32(4,36+len*ch*2,true); str(8,'WAVE');
+  str(12,'fmt '); data.setUint32(16,16,true); data.setUint16(20,1,true);
+  data.setUint16(22,ch,true); data.setUint32(24,sr,true);
+  data.setUint32(28,sr*ch*2,true); data.setUint16(32,ch*2,true); data.setUint16(34,16,true);
+  str(36,'data'); data.setUint32(40,len*ch*2,true);
+  const chans=[]; for(let c=0;c<ch;c++) chans.push(buf.getChannelData(c));
+  let off=44;
+  for(let i=0;i<len;i++) for(let c=0;c<ch;c++){
+    let v=Math.max(-1,Math.min(1,chans[c][i]));
+    data.setInt16(off, v<0 ? v*0x8000 : v*0x7fff, true); off+=2;
+  }
+  return new Blob([data.buffer],{type:'audio/wav'});
+}
+
+async function exportWav(){
+  const btn=$('#wav'), o=readOpts();
+  render();
+  if(!curScore.length){ alert('ยังไม่มีโน้ตให้บันทึก'); return; }
+  const ev=buildEvents(o);
+  btn.disabled=true; btn.textContent='กำลังเรนเดอร์…';
+  try{
+    const sr=44100, tail=2.5;
+    const off=new OfflineAudioContext(2, Math.ceil((ev.total+tail)*sr), sr);
+    const g=buildGraph(off,o);
+    if(o.ching) await ensureSamples(off);
+    scheduleAll(off,g,ev,o,0.05);
+    const buf=await off.startRendering();
+    const url=URL.createObjectURL(encodeWav(buf));
+    const a=document.createElement('a');
+    a.href=url; a.download='noinoi-'+o.inst+'.wav';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+  }catch(e){
+    alert('บันทึกไม่สำเร็จ: '+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='⬇ บันทึก .wav';
+  }
+}
+
+/* ---------- ผูก event ---------- */
+(function init(){
+  const sel=$('#preset');
+  PRESETS.forEach(p=>{
+    const op=document.createElement('option');
+    op.value=p.id; op.textContent=p.name; sel.appendChild(op);
+  });
+  const cur=document.createElement('option');
+  cur.value=''; cur.textContent='— โน้ตปัจจุบัน —';
+  sel.appendChild(cur);
+  sel.onchange=()=>{
+    const p=PRESETS.find(x=>x.id===sel.value); if(!p) return;
+    srcEl.value=p.text; $('#chan').value=p.chan;
+    $('#tempo').value=p.tempo; $('#tempoV').textContent=p.tempo;
+    stop(); startStep=0; render(); autoSave();
+  };
+
+  let deb=0;
+  srcEl.addEventListener('input',()=>{ clearTimeout(deb); deb=setTimeout(render,180); });
+
+  $('#tempo').oninput = e=>{ $('#tempoV').textContent=e.target.value; updateMeta(); };
+  $('#vol').oninput   = e=>{
+    $('#volV').textContent=e.target.value;
+    if(graph) graph.master.gain.setTargetAtTime(+e.target.value/100, ac.currentTime, .02);
+  };
+  // เปลี่ยนป้ายฉิ่งใต้ห้อง จึงต้องวาดใหม่
+  ['#chan','#ching'].forEach(s=>{ $(s).addEventListener('change',render); });
+
+  // ทาง / คีย์ / เสียงอ้างอิง — ตัวตั้งคิวอ่านค่าเอง แค่อัปเดตตัวเลขที่แสดง
+  const PITCH = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+  function noteName(f){                       // เทียบกับ A4 = 440 เสมอ
+    const n=12*Math.log2(f/440), r=Math.round(n), c=Math.round((n-r)*100);
+    return PITCH[((r+9)%12+12)%12] + (4+Math.floor((r+9)/12))
+         + (c<0 ? ' −' : ' +') + Math.abs(c) + '¢';
+  }
+  function showKey(){
+    const o=readOpts();
+    const f=o.base*Math.pow(2, INST[o.inst].oct||0);   // ความถี่ที่ได้ยินจริง
+    $('#keyHz').textContent = f.toFixed(1);
+    $('#keyNote').textContent = 'ด ของ'+$('#inst').selectedOptions[0].text+' ≈ '+noteName(f);
+  }
+
+  let refThai=264, refWest=440, prevWest=false;
+  function onKeyChange(){
+    const west = $('#key').value[0]==='w';
+    if(west!==prevWest){
+      if(prevWest) refWest = +$('#base').value||440;
+      else         refThai = +$('#base').value||264;
+      $('#base').value = west ? refWest : refThai;
+      $('#refLab').innerHTML = west
+        ? 'เสียงอ้างอิง — <b>A4</b> (Hz)'
+        : 'เสียงอ้างอิง — <b>ด</b> ของทางเพียงออล่าง (Hz)';
+      prevWest = west;
+    }
+    showKey();
+  }
+  $('#key').addEventListener('change',onKeyChange);
+  $('#tuning').addEventListener('change',showKey);
+  $('#oct').addEventListener('change',showKey);
+  $('#inst').addEventListener('change',showKey);
+  $('#base').addEventListener('input',()=>{
+    if(prevWest) refWest = +$('#base').value||440;
+    else         refThai = +$('#base').value||264;
+    showKey();
+  });
+  showKey();
+  // ระบบเสียง / เสียงหลัก / เครื่องดนตรี ไม่มีผลกับหน้าจอ ตัวตั้งคิวอ่านค่าเองอยู่แล้ว
+
+  const percVol = (slider,label,busKey) => {
+    $(slider).oninput = e=>{
+      $(label).textContent = e.target.value;
+      if(graph) graph[busKey].gain.setTargetAtTime(+e.target.value/100, ac.currentTime, .02);
+    };
+  };
+  percVol('#chingVol','#chingVolV','ching');
+
+  const syncPerc = ()=>{ $('#chingVol').disabled = !$('#ching').checked; };
+  $('#ching').addEventListener('change',syncPerc);
+  syncPerc();
+
+  // ---------- บันทึก / เปิดโน้ตพร้อมการตั้งค่า ----------
+  const CTRLS = ['tempo','inst','tuning','key','oct','base','chan','vol',
+                 'chingVol','ching','loop','follow','perLine'];
+
+  // หลังยัดค่าเข้า control แล้ว ต้องไล่อัปเดตตัวเลข ป้าย และหน้าจอที่ผูกกันไว้
+  function refreshUI(){
+    $('#tempoV').textContent    = $('#tempo').value;
+    $('#volV').textContent      = $('#vol').value;
+    $('#chingVolV').textContent = $('#chingVol').value;
+    prevWest = $('#key').value[0]==='w';
+    $('#refLab').innerHTML = prevWest
+      ? 'เสียงอ้างอิง — <b>A4</b> (Hz)'
+      : 'เสียงอ้างอิง — <b>ด</b> ของทางเพียงออล่าง (Hz)';
+    if(prevWest) refWest = +$('#base').value||440;
+    else         refThai = +$('#base').value||264;
+    syncPerc(); showKey(); render();
+    if(typeof autoSave==='function') autoSave();
+  }
+
+  const VARIANT = $('#inst') ? 'thai' : 'khlui';
+
+  function snapshot(){
+    const settings = {};
+    for(const id of CTRLS){
+      const el = $('#'+id); if(!el) continue;
+      settings[id] = el.type==='checkbox' ? el.checked : el.value;
+    }
+    return { app:'noinoi', version:1, variant:VARIANT, notes:srcEl.value, settings };
+  }
+
+  function applyState(d){
+    if(d.app !== 'noinoi') throw new Error('ไม่ใช่ไฟล์ที่บันทึกจาก NoiNoi');
+    if(typeof d.notes === 'string') srcEl.value = d.notes;
+    const st = d.settings || {};
+    for(const id in st){                   // control ที่ไฟล์นี้ไม่มี ก็ข้ามไป
+      const el = $('#'+id); if(!el) continue;
+      if(el.type==='checkbox') el.checked = !!st[id];
+      else                     el.value   = st[id];
+    }
+    refreshUI();
+  }
+
+  function saveFile(){
+    const data = snapshot();
+    data.saved = new Date().toISOString();
+    const d=new Date(), z=n=>String(n).padStart(2,'0');
+    const name = 'noinoi-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())
+               + '-'+z(d.getHours())+z(d.getMinutes())+'.json';
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    const a = document.createElement('a');
+    a.href=url; a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }
+
+  function loadFile(ev){
+    const input = ev.target;
+    const f = input.files && input.files[0];
+    if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      try{
+        stop();
+        applyState(JSON.parse(rd.result));
+      }catch(e){
+        alert('เปิดไฟล์ไม่ได้ — '+e.message);
+      }
+      input.value = '';                      // เลือกไฟล์เดิมซ้ำได้
+    };
+    rd.onerror = ()=>{ alert('อ่านไฟล์ไม่สำเร็จ'); input.value=''; };
+    rd.readAsText(f);
+  }
+
+  // ---------- จำสถานะล่าสุดไว้ในเบราว์เซอร์ ----------
+  // ไฟล์ file:// ทุกไฟล์ใช้ origin เดียวกัน จึงต้องแยก key ตามรุ่นของหน้า
+  const LS_KEY = 'noinoi:' + VARIANT;
+  let lsOk = true, lsTimer = 0;
+
+  function lsFail(){
+    lsOk = false;
+    $('#lsNote').textContent = 'เบราว์เซอร์นี้จำอัตโนมัติไม่ได้ — ใช้ปุ่ม 💾 เซฟ แทน';
+  }
+  function autoSave(){
+    if(!lsOk) return;
+    clearTimeout(lsTimer);
+    lsTimer = setTimeout(()=>{
+      try{
+        localStorage.setItem(LS_KEY, JSON.stringify(snapshot()));
+        $('#lsNote').textContent = 'จำไว้ในเบราว์เซอร์แล้ว';
+      }catch(e){ lsFail(); }
+    }, 400);
+  }
+  function autoRestore(){
+    let raw = null;
+    try{ raw = localStorage.getItem(LS_KEY); }catch(e){ lsFail(); return false; }
+    if(!raw) return false;
+    try{ applyState(JSON.parse(raw)); return true; }
+    catch(e){ try{ localStorage.removeItem(LS_KEY); }catch(e2){} return false; }
+  }
+
+  for(const id of CTRLS){
+    const el = $('#'+id); if(!el) continue;
+    el.addEventListener('change', autoSave);
+    el.addEventListener('input',  autoSave);
+  }
+  srcEl.addEventListener('input', autoSave);
+
+  $('#save').onclick = saveFile;
+  $('#open').onclick = ()=>$('#file').click();
+  $('#file').addEventListener('change', loadFile);
+
+  $('#play').onclick  = playFrom;
+  $('#pause').onclick = pause;
+  $('#stop').onclick  = stop;
+  $('#wav').onclick  = exportWav;
+  $('#tidy').onclick = ()=>{ tidy(); autoSave(); };
+
+  const selN = $('#startNote');
+  NOTE.forEach((n,i)=>{
+    const op = document.createElement('option');
+    op.value = String(i); op.textContent = n;
+    selN.appendChild(op);
+  });
+  const doTr = k => { applyTranspose(k); autoSave(); };   // autoSave อยู่ใน init เท่านั้น
+  selN.onchange = ()=>{ const fd = firstDeg(); if(fd >= 0) doTr(+selN.value - fd); };
+  $('#trUp').onclick   = ()=>doTr(1);
+  $('#trDown').onclick = ()=>doTr(-1);
+
+  document.addEventListener('keydown',e=>{
+    if(e.code==='Space' && e.target!==srcEl && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){
+      e.preventDefault(); playing ? pause() : playFrom();
+    }
+  });
+
+  if(autoRestore()) sel.value='';        // มีของค้างไว้ ไม่ต้องทับด้วยตัวอย่าง
+  else { sel.value='scale'; sel.onchange(); }
+})();
+})();
+</script>
+</body>
+</html>
