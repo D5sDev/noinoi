@@ -1,0 +1,74 @@
+[
+ {
+  "file": "phiangor_01.wav",
+  "f0": 458.94,
+  "loopStart": 0.415782,
+  "dur": 0.555873
+ },
+ {
+  "file": "phiangor_02.wav",
+  "f0": 513.67,
+  "loopStart": 0.450522,
+  "dur": 0.592426
+ },
+ {
+  "file": "phiangor_03.wav",
+  "f0": 563.11,
+  "loopStart": 0.50839,
+  "dur": 0.749977
+ },
+ {
+  "file": "phiangor_04.wav",
+  "f0": 621.79,
+  "loopStart": 0.323175,
+  "dur": 0.483991
+ },
+ {
+  "file": "phiangor_05.wav",
+  "f0": 679.9,
+  "loopStart": 0.323175,
+  "dur": 0.467211
+ },
+ {
+  "file": "phiangor_06.wav",
+  "f0": 744.57,
+  "loopStart": 0.52,
+  "dur": 0.8
+ },
+ {
+  "file": "phiangor_07.wav",
+  "f0": 835.62,
+  "loopStart": 0.357914,
+  "dur": 0.562041
+ },
+ {
+  "file": "phiangor_08.wav",
+  "f0": 922.05,
+  "loopStart": 0.346304,
+  "dur": 0.488254
+ },
+ {
+  "file": "phiangor_09.wav",
+  "f0": 1020.38,
+  "loopStart": 0.419501,
+  "dur": 0.613061
+ },
+ {
+  "file": "phiangor_10.wav",
+  "f0": 1114.98,
+  "loopStart": 0.221905,
+  "dur": 0.424989
+ },
+ {
+  "file": "phiangor_11.wav",
+  "f0": 1221.33,
+  "loopStart": 0.119002,
+  "dur": 0.204127
+ },
+ {
+  "file": "phiangor_12.wav",
+  "f0": 1348.63,
+  "loopStart": 0.187302,
+  "dur": 0.283719
+ }
+]

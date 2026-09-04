@@ -43,6 +43,10 @@ p{margin:0}
 .brand h1{font-size:19px;line-height:1.1}
 .brand p{font-size:12.5px;color:var(--dim)}
 .transport{display:flex;gap:8px;flex-wrap:wrap}
+.pages{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.pages a{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:7px 15px;border-radius:7px;transition:.14s}
+.pages a:hover{color:var(--fg);background:#241e17}
+.pages a.on{background:linear-gradient(145deg,var(--gold),#bd8f30);color:#1d1608}
 
 /* buttons */
 .btn{
@@ -191,6 +195,10 @@ details[open] summary{margin-bottom:12px}
       <h1>NoiNoi ขลุ่ย</h1>
     </div>
   </div>
+  <nav class="pages">
+    <a href="index.html">โน้ตไทย</a>
+    <a href="khlui.html" class="on">ขลุ่ย</a>
+  </nav>
   <div class="transport">
     <button id="play" class="btn primary">▶ เล่น</button>
     <button id="pause" class="btn" disabled>⏸ พัก</button>

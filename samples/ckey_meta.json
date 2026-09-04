@@ -1,0 +1,86 @@
+[
+ {
+  "file": "ckey_01.wav",
+  "f0": 534.47,
+  "loopStart": 0.485261,
+  "dur": 0.663401
+ },
+ {
+  "file": "ckey_02.wav",
+  "f0": 595.59,
+  "loopStart": 0.50839,
+  "dur": 0.793696
+ },
+ {
+  "file": "ckey_03.wav",
+  "f0": 654.94,
+  "loopStart": 0.427347,
+  "dur": 0.587574
+ },
+ {
+  "file": "ckey_04.wav",
+  "f0": 698.36,
+  "loopStart": 0.450522,
+  "dur": 0.652472
+ },
+ {
+  "file": "ckey_05.wav",
+  "f0": 777.36,
+  "loopStart": 0.311565,
+  "dur": 0.598503
+ },
+ {
+  "file": "ckey_06.wav",
+  "f0": 871.95,
+  "loopStart": 0.346304,
+  "dur": 0.583039
+ },
+ {
+  "file": "ckey_07.wav",
+  "f0": 978.7,
+  "loopStart": 0.3,
+  "dur": 0.469388
+ },
+ {
+  "file": "ckey_08.wav",
+  "f0": 1075.58,
+  "loopStart": 0.310431,
+  "dur": 0.465215
+ },
+ {
+  "file": "ckey_09.wav",
+  "f0": 1188.72,
+  "loopStart": 0.307755,
+  "dur": 0.466667
+ },
+ {
+  "file": "ckey_10.wav",
+  "f0": 1312.64,
+  "loopStart": 0.256054,
+  "dur": 0.384762
+ },
+ {
+  "file": "ckey_11.wav",
+  "f0": 1379.62,
+  "loopStart": 0.281995,
+  "dur": 0.5
+ },
+ {
+  "file": "ckey_12.wav",
+  "f0": 1561.48,
+  "loopStart": 0.151837,
+  "dur": 0.337551
+ },
+ {
+  "file": "ckey_13.wav",
+  "f0": 1727.84,
+  "loopStart": 0.180862,
+  "dur": 0.276281
+ },
+ {
+  "file": "ckey_14.wav",
+  "f0": 1998.61,
+  "loopStart": 0.181995,
+  "dur": 0.318095
+ }
+]

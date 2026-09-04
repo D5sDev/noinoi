@@ -1,8 +1,5 @@
-# ไฟล์เสียงต้นฉบับและงานระหว่างทาง — ไม่ต้องเก็บเข้า repo
-*.wav
-*.m4a
-raw/
-scratch/
+# ไฟล์ decode ระหว่างทาง — สร้างใหม่ได้จาก raw/
+*_raw.wav
 
 # ระบบปฏิบัติการ / เอดิเตอร์
 Thumbs.db
@@ -10,3 +7,4 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+__pycache__/
