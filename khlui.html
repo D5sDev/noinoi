@@ -192,8 +192,11 @@ details[open] summary{margin-bottom:12px}
   main{padding:13px;gap:13px}
   .panel{padding:13px}
 
-  /* หัวเรื่องเลิกหนึบอยู่บนจอ จะได้ไม่กินที่ */
-  .top{position:static;padding:10px 13px;gap:10px}
+  /* ปุ่มย้ายลงล่างหมดแล้ว หัวเรื่องเหลือแค่ชื่อกับแท็บ แถวเดียวจบ หนึบไว้ได้ */
+  .top{padding:9px 13px;gap:10px;flex-wrap:nowrap}
+  .top .brand{flex:0 1 auto;min-width:0}
+  .brand h1{white-space:nowrap}
+  .pages{flex:0 0 auto}
   .brand p{display:none}
   .brand{gap:9px}
   .logo{width:34px;height:34px;flex-basis:34px;font-size:18px;border-radius:10px}
@@ -236,7 +239,7 @@ details[open] summary{margin-bottom:12px}
   .slot{width:30px;height:34px;font-size:17px}
   .cells{gap:5px}
   .linenum{flex-basis:20px;font-size:11px}
-  .line{scroll-margin-top:12px}
+  .line{scroll-margin-top:66px}      /* เผื่อความสูงของหัวเรื่องที่หนึบอยู่ */
 }
 </style>
 </head>
