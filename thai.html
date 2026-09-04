@@ -42,7 +42,7 @@ p{margin:0}
 }
 .brand h1{font-size:19px;line-height:1.1}
 .brand p{font-size:12.5px;color:var(--dim)}
-.transport{display:flex;gap:8px;flex-wrap:wrap}
+.transport,.fileops{display:flex;gap:8px;flex-wrap:wrap}
 .pages{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
 .pages a{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:7px 15px;border-radius:7px;transition:.14s}
 .pages a:hover{color:var(--fg);background:#241e17}
@@ -181,6 +181,56 @@ details[open] summary{margin-bottom:12px}
 .note{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.7}
 
 @media(max-width:900px){ main{grid-template-columns:1fr} }
+
+/* ---------- มือถือ ---------- */
+@media(max-width:640px){
+  body{padding-bottom:68px}          /* เผื่อที่ให้แถบปุ่มเล่นที่ลอยอยู่ล่างจอ */
+  main{padding:13px;gap:13px}
+  .panel{padding:13px}
+
+  /* หัวเรื่องเลิกหนึบอยู่บนจอ จะได้ไม่กินที่ */
+  .top{position:static;padding:10px 13px;gap:10px}
+  .brand p{display:none}
+  .brand{gap:9px}
+  .logo{width:34px;height:34px;flex-basis:34px;font-size:18px;border-radius:10px}
+  .brand h1{font-size:17px}
+  .pages a{padding:7px 12px;font-size:12.5px}
+  .fileops{gap:6px}
+  .fileops .btn{flex:1;padding:9px 6px;font-size:13px}
+
+  /* ปุ่มเล่นย้ายลงไปอยู่ล่างจอ กดด้วยนิ้วโป้งได้ */
+  .transport{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    margin:0;padding:8px 10px;gap:8px;flex-wrap:nowrap;
+    background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);
+  }
+  .transport .btn{flex:1;min-width:0;padding:13px 4px;font-size:14px;white-space:nowrap}
+
+  /* ปรับให้ไม่โดนซูมเองตอนแตะช่องกรอกบน iOS */
+  select,input[type=number]{font-size:16px}
+  .tidybar input[type=number]{font-size:16px;width:72px}
+  .tidybar select{font-size:16px}
+
+  /* คุมเป็นคอลัมน์เดียว จะได้ไม่แน่นจนอ่านไม่ออก */
+  .row2{grid-template-columns:1fr}
+  .tidybar{gap:8px}
+  .tidybar .sep{display:none}
+  #tidy{flex:1 0 100%}
+
+  /* แป้นโน้ตให้ 7 ปุ่มพอดีบรรทัดเดียว */
+  .keyrow{flex-wrap:nowrap;gap:5px}
+  .keyrow .tag{flex:0 0 30px;width:30px;font-size:11px}
+  .key{flex:1;min-width:0;padding:0;font-size:18px}
+  .keyrow:last-child{flex-wrap:wrap}
+  .keyrow:last-child .key{flex:0 0 auto;padding:0 10px}
+
+  /* ช่องโน้ตเล็กลงหน่อย จะได้ลงบรรทัดละหลายห้อง */
+  .slot{width:30px;height:34px;font-size:17px}
+  .cells{gap:5px}
+  .linenum{flex-basis:20px;font-size:11px}
+  .line{scroll-margin-top:12px}
+}
 </style>
 </head>
 <body>
@@ -197,14 +247,16 @@ details[open] summary{margin-bottom:12px}
     <a href="thai.html" class="on">โน้ตไทย</a>
     <a href="khlui.html">ขลุ่ย</a>
   </nav>
-  <div class="transport">
-    <button id="play" class="btn primary">▶ เล่น</button>
-    <button id="pause" class="btn" disabled>⏸ พัก</button>
-    <button id="stop" class="btn" disabled>■ หยุด</button>
+  <div class="fileops">
     <button id="save" class="btn ghost" title="บันทึกโน้ตพร้อมการตั้งค่าเป็นไฟล์ .json">💾 เซฟ</button>
     <button id="open" class="btn ghost" title="เปิดไฟล์โน้ตที่เคยบันทึกไว้">📂 เปิด</button>
     <button id="wav" class="btn ghost" title="บันทึกเสียงเป็นไฟล์ .wav">⬇ .wav</button>
     <input type="file" id="file" accept=".json,application/json" hidden>
+  </div>
+  <div class="transport">
+    <button id="play" class="btn primary">▶ เล่น</button>
+    <button id="pause" class="btn" disabled>⏸ พัก</button>
+    <button id="stop" class="btn" disabled>■ หยุด</button>
   </div>
 </header>
 
