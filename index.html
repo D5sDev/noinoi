@@ -86,6 +86,8 @@ textarea#src:focus{border-color:var(--gold-dim)}
 .tidybar{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 .tidybar label{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px}
 .tidybar input[type=number]{width:66px;padding:6px 8px;font-size:13px}
+.tidybar select{width:auto;padding:6px 8px;font-size:15px}
+.tidybar .sep{width:1px;height:22px;background:var(--line)}
 .btn.sm{padding:6px 13px;font-size:13px}
 .subhint{font-size:11.5px;color:var(--dim);line-height:1.4}
 .pair{display:flex;gap:6px}
@@ -207,6 +209,10 @@ details[open] summary{margin-bottom:12px}
     <div class="tidybar">
       <button class="btn ghost sm" id="tidy">⌗ จัดระเบียบโน้ต</button>
       <label>ห้อง/บรรทัด <input type="number" id="perLine" value="8" min="1" max="16" step="1"></label>
+      <span class="sep"></span>
+      <label>ขึ้นด้วย <select id="startNote" title="เปลี่ยนเสียงแรกของเพลง โน้ตทั้งเพลงจะขยับตาม"></select></label>
+      <button class="btn ghost sm" id="trDown" title="ขยับโน้ตทั้งเพลงลง 1 ขั้น">▼</button>
+      <button class="btn ghost sm" id="trUp" title="ขยับโน้ตทั้งเพลงขึ้น 1 ขั้น">▲</button>
       <span class="subhint" id="lsNote"></span>
     </div>
     <div class="keys" id="keys"></div>
@@ -352,6 +358,8 @@ details[open] summary{margin-bottom:12px}
             <li>ตัวอักษรที่เขียนติดกันคือ <b>1 ห้อง</b> เช่น <code>ดรมฟ</code> = 4 ช่อง</li>
             <li>เว้นวรรค (หรือ <code>|</code>) = ขึ้นห้องใหม่</li>
             <li>1 ห้องกินเวลาเท่ากันเสมอ ใส่ 2 หรือ 4 ตัวก็ได้ ระบบจะแบ่งเวลาให้เอง</li>
+            <li><b>ขึ้นด้วย</b> กับปุ่ม ▲ ▼ — <b>เขียนโน้ตใหม่ทั้งเพลง</b>ขึ้นหรือลงทีละขั้น เพลงที่ขึ้นด้วย <code>ซ</code> เลือก <code>ล</code> จะกลายเป็นโน้ตของ ล ทั้งเพลง เลย <code>ท</code> แล้วขึ้นคู่แปดให้เอง คำอธิบายและการจัดวางคงเดิม</li>
+            <li>ต่างจาก <b>ทาง / คีย์</b> ตรงที่อันนั้นเปลี่ยนเฉพาะระดับเสียงที่ได้ยิน โน้ตบนหน้าจอเหมือนเดิม ส่วนอันนี้เปลี่ยนตัวโน้ตจริง ๆ ไว้ใช้ตอนต้องอ่านโน้ตตามนิ้วที่จับ</li>
             <li>ขึ้นบรรทัดใหม่ = บรรทัดถัดไป (นิยม 8 ห้อง/บรรทัด)</li>
           </ul>
           <p class="note">ตัวอย่าง<br><code>ดรมฟ ซลทดํ ดํทลซ ฟมรด</code></p>
@@ -736,6 +744,11 @@ function render(){
   });
   if(startStep >= steps.length) startStep = 0;
   markStart();
+  const fd = firstDeg(), selN = $('#startNote');
+  if(selN && selN.options.length){
+    selN.disabled = fd < 0;
+    if(fd >= 0) selN.value = String(fd);
+  }
   updateMeta();
 }
 
@@ -756,6 +769,55 @@ function updateMeta(){
   if(!steps.length){ metaEl.textContent=''; return; }
   const ev = buildEvents(readOpts());
   metaEl.textContent = curScore.length+' บรรทัด · '+ev.cells+' ห้อง · '+ev.notes.length+' เสียง · ~'+fmtTime(ev.total);
+}
+
+/* ---------- ขยับคีย์ของโน้ต ---------- */
+// เขียนโน้ตใหม่ทีละตัวอักษร เพื่อรักษาการจัดวาง เว้นวรรค วงเล็บ และคำอธิบายไว้เหมือนเดิม
+function transposeText(text, k){
+  if(!k) return text;
+  const out = [];
+  for(const raw of text.split('\n')){
+    let cut = raw.length;
+    const a = raw.indexOf('//'), b = raw.indexOf('#');
+    if(a >= 0) cut = Math.min(cut, a);
+    if(b >= 0) cut = Math.min(cut, b);
+    const body = raw.slice(0, cut), rest = raw.slice(cut);
+    let line = '';
+    for(let i=0;i<body.length;i++){
+      const ch = body[i];
+      let deg = NOTE.indexOf(ch);
+      if(deg < 0) deg = ASCII.indexOf(ch.toLowerCase());
+      if(deg < 0){ line += ch; continue; }
+      let oct=0, kh=false, j=i;
+      while(j+1 < body.length){
+        const n = body[j+1];
+        if(n===UP||n==="'"||n==='^'){ oct++; j++; }
+        else if(n===DOWN||n===','||n==='_'){ oct--; j++; }
+        else if(n==='*'){ kh=true; j++; }
+        else break;
+      }
+      const t = deg + k;                       // เลย ท แล้วขึ้นคู่แปด ต่ำกว่า ด แล้วลงคู่แปด
+      line += glyph(((t%7)+7)%7, oct + Math.floor(t/7)) + (kh ? '*' : '');
+      i = j;
+    }
+    out.push(line + rest);
+  }
+  return out.join('\n');
+}
+
+// เสียงแรกของเพลง ใช้บอกว่าตอนนี้ขึ้นด้วยตัวอะไร
+function firstDeg(){
+  for(const st of steps){
+    if(st.sym.type==='note') return st.sym.deg;
+    if(st.sym.type==='group') for(const x of st.sym.syms) if(x.type==='note') return x.deg;
+  }
+  return -1;
+}
+
+function applyTranspose(k){
+  if(!k || !steps.length) return;
+  srcEl.value = transposeText(srcEl.value, k);
+  render();
 }
 
 /* ---------- จัดระเบียบโน้ต ---------- */
@@ -1223,6 +1285,17 @@ async function exportWav(){
   $('#stop').onclick  = stop;
   $('#wav').onclick  = exportWav;
   $('#tidy').onclick = ()=>{ tidy(); autoSave(); };
+
+  const selN = $('#startNote');
+  NOTE.forEach((n,i)=>{
+    const op = document.createElement('option');
+    op.value = String(i); op.textContent = n;
+    selN.appendChild(op);
+  });
+  const doTr = k => { applyTranspose(k); autoSave(); };   // autoSave อยู่ใน init เท่านั้น
+  selN.onchange = ()=>{ const fd = firstDeg(); if(fd >= 0) doTr(+selN.value - fd); };
+  $('#trUp').onclick   = ()=>doTr(1);
+  $('#trDown').onclick = ()=>doTr(-1);
 
   document.addEventListener('keydown',e=>{
     if(e.code==='Space' && e.target!==srcEl && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){
