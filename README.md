@@ -5,9 +5,9 @@
 
 | | |
 |---|---|
-| [หน้าแรก](https://d5sdev.github.io/NoiNoi/) | อธิบายภาพรวมและวิธีเขียนโน้ตย่อ ๆ |
-| [โน้ตไทย](https://d5sdev.github.io/NoiNoi/thai.html) | เครื่องดนตรีสังเคราะห์ 6 ชนิด |
-| [ขลุ่ย](https://d5sdev.github.io/NoiNoi/khlui.html) | เสียงขลุ่ยอัดจริง ลูกสะบัด เสียงควง |
+| [หน้าแรก](https://d5sdev.github.io/noinoi/) | อธิบายภาพรวมและวิธีเขียนโน้ตย่อ ๆ |
+| [โน้ตไทย](https://d5sdev.github.io/noinoi/thai.html) | เครื่องดนตรีสังเคราะห์ 6 ชนิด |
+| [ขลุ่ย](https://d5sdev.github.io/noinoi/khlui.html) | เสียงขลุ่ยอัดจริง ลูกสะบัด เสียงควง |
 
 ---
 
