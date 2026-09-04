@@ -202,9 +202,10 @@ Promise.resolve(btn('play').onclick()).then(() => {
   }
   Promise.resolve(btn('play').onclick()).then(() => {
     btn('pause').onclick();
-    if (btn('play').textContent.indexOf('ต่อ') < 0) die('กดพักแล้วปุ่มไม่เปลี่ยนเป็นเล่นต่อ');
+    const lbl = () => (btn('playLbl') || btn('play')).textContent;
+    if (lbl().indexOf('ต่อ') < 0) die('กดพักแล้วปุ่มไม่เปลี่ยนเป็นเล่นต่อ');
     if (btn('pause').disabled !== true) die('กดพักแล้วปุ่มพักยังกดได้อยู่');
-    ok('พัก — ปุ่มเป็น "' + btn('play').textContent + '"');
+    ok('พัก — ปุ่มเป็น "▶' + lbl() + '"');
     return Promise.resolve(btn('play').onclick());
   }).then(() => {
     if (btn('pause').disabled !== false) die('เล่นต่อแล้วปุ่มพักยังกดไม่ได้');

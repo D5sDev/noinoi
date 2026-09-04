@@ -208,10 +208,10 @@ details[open] summary{margin-bottom:12px}
   }
   .bar .transport{flex:1;min-width:0;gap:6px;flex-wrap:nowrap}
   .bar .fileops{flex:0 0 auto;gap:6px;flex-wrap:nowrap}
-  .bar .btn{padding:12px 2px;font-size:12.5px;white-space:nowrap;overflow:hidden}
+  .bar .btn{padding:13px 2px;font-size:17px;line-height:1}
+  .bar .lbl{display:none}              /* เหลือแค่ไอคอน กดง่ายและไม่กินที่ */
   .transport .btn{flex:1;min-width:0}
-  .fileops .btn{flex:0 0 38px;font-size:16px;color:var(--fg)}
-  .fileops .lbl{display:none}          /* เหลือแค่ไอคอน จะได้ไม่กินที่ */
+  .fileops .btn{flex:0 0 46px;color:var(--fg)}
 
   /* ปรับให้ไม่โดนซูมเองตอนแตะช่องกรอกบน iOS */
   select,input[type=number]{font-size:16px}
@@ -255,9 +255,9 @@ details[open] summary{margin-bottom:12px}
   </nav>
   <div class="bar">
     <div class="transport">
-      <button id="play" class="btn primary">▶ เล่น</button>
-      <button id="pause" class="btn" disabled>⏸ พัก</button>
-      <button id="stop" class="btn" disabled>■ หยุด</button>
+      <button id="play" class="btn primary" title="เล่น">▶<span class="lbl" id="playLbl"> เล่น</span></button>
+      <button id="pause" class="btn" disabled title="หยุดชั่วคราว">⏸<span class="lbl" id="pauseLbl"> พัก</span></button>
+      <button id="stop" class="btn" disabled title="หยุด">■<span class="lbl"> หยุด</span></button>
     </div>
     <div class="fileops">
       <button id="save" class="btn ghost" title="บันทึกโน้ตพร้อมการตั้งค่าเป็นไฟล์ .json">💾<span class="lbl"> เซฟ</span></button>
@@ -826,7 +826,7 @@ function setStart(i){
   startStep = (startStep === i) ? 0 : i;
   pausedAt = null;
   markStart();
-  if(!playing) $('#play').textContent = '▶ เล่น';
+  if(!playing) $('#playLbl').textContent = ' เล่น';
 }
 function markStart(){
   for(const el of slotEls) el.classList.remove('start');
@@ -1058,9 +1058,9 @@ async function start(from){
   graph = buildGraph(c,o);
   playing=true; stepIdx=begin; curStep=begin; pausedAt=null;
   hiQ=[]; endTime=Infinity; followLine=null; userScrollUntil=0;
-  $('#pause').disabled=false; $('#pause').textContent='⏸ พัก';
+  $('#pause').disabled=false; $('#pauseLbl').textContent=' พัก';
   nextTime = c.currentTime + .12;
-  $('#play').textContent='▶ เล่นใหม่'; $('#stop').disabled=false;
+  $('#playLbl').textContent=' เล่นใหม่'; $('#stop').disabled=false;
   scheduler();
   clearInterval(schedTimer); schedTimer=setInterval(scheduler,TICK_MS);
   cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
@@ -1102,14 +1102,14 @@ function halt(){
 }
 function stop(){
   halt(); clearHi(); pausedAt=null;
-  $('#play').textContent='▶ เล่น';
-  $('#stop').disabled=true; $('#pause').disabled=true; $('#pause').textContent='⏸ พัก';
+  $('#playLbl').textContent=' เล่น';
+  $('#stop').disabled=true; $('#pause').disabled=true; $('#pauseLbl').textContent=' พัก';
 }
 function pause(){
   if(!playing) return;
   pausedAt = curStep;                 // เล่นต่อจากช่องที่กำลังดังอยู่
   halt();
-  $('#play').textContent='▶ เล่นต่อ';
+  $('#playLbl').textContent=' เล่นต่อ';
   $('#pause').disabled=true; $('#stop').disabled=false;
 }
 const playFrom = ()=> start(pausedAt !== null ? pausedAt : startStep);
