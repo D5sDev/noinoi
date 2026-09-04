@@ -42,7 +42,7 @@ p{margin:0}
 }
 .brand h1{font-size:19px;line-height:1.1}
 .brand p{font-size:12.5px;color:var(--dim)}
-.transport,.fileops{display:flex;gap:8px;flex-wrap:wrap}
+.bar,.transport,.fileops{display:flex;gap:8px;flex-wrap:wrap}
 .pages{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
 .pages a{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:7px 15px;border-radius:7px;transition:.14s}
 .pages a:hover{color:var(--fg);background:#241e17}
@@ -195,17 +195,20 @@ details[open] summary{margin-bottom:12px}
   .logo{width:34px;height:34px;flex-basis:34px;font-size:18px;border-radius:10px}
   .brand h1{font-size:17px}
   .pages a{padding:7px 12px;font-size:12.5px}
-  .fileops{gap:6px}
-  .fileops .btn{flex:1;padding:9px 6px;font-size:13px}
 
-  /* ปุ่มเล่นย้ายลงไปอยู่ล่างจอ กดด้วยนิ้วโป้งได้ */
-  .transport{
+  /* ปุ่มทั้งหมดย้ายลงแถบล่างจอ กดด้วยนิ้วโป้งได้ ไม่ต้องเลื่อนกลับขึ้นไปหา */
+  .bar{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
-    margin:0;padding:8px 10px;gap:8px;flex-wrap:nowrap;
+    margin:0;padding:8px 10px;gap:8px;flex-wrap:nowrap;align-items:stretch;
     background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
     border-top:1px solid var(--line);
   }
-  .transport .btn{flex:1;min-width:0;padding:13px 4px;font-size:14px;white-space:nowrap}
+  .bar .transport{flex:1;min-width:0;gap:6px;flex-wrap:nowrap}
+  .bar .fileops{flex:0 0 auto;gap:6px;flex-wrap:nowrap}
+  .bar .btn{padding:12px 2px;font-size:12.5px;white-space:nowrap;overflow:hidden}
+  .transport .btn{flex:1;min-width:0}
+  .fileops .btn{flex:0 0 38px;font-size:16px;color:var(--fg)}
+  .fileops .lbl{display:none}          /* เหลือแค่ไอคอน จะได้ไม่กินที่ */
 
   /* ปรับให้ไม่โดนซูมเองตอนแตะช่องกรอกบน iOS */
   select,input[type=number]{font-size:16px}
@@ -247,16 +250,18 @@ details[open] summary{margin-bottom:12px}
     <a href="thai.html" class="on">โน้ตไทย</a>
     <a href="khlui.html">ขลุ่ย</a>
   </nav>
-  <div class="fileops">
-    <button id="save" class="btn ghost" title="บันทึกโน้ตพร้อมการตั้งค่าเป็นไฟล์ .json">💾 เซฟ</button>
-    <button id="open" class="btn ghost" title="เปิดไฟล์โน้ตที่เคยบันทึกไว้">📂 เปิด</button>
-    <button id="wav" class="btn ghost" title="บันทึกเสียงเป็นไฟล์ .wav">⬇ .wav</button>
-    <input type="file" id="file" accept=".json,application/json" hidden>
-  </div>
-  <div class="transport">
-    <button id="play" class="btn primary">▶ เล่น</button>
-    <button id="pause" class="btn" disabled>⏸ พัก</button>
-    <button id="stop" class="btn" disabled>■ หยุด</button>
+  <div class="bar">
+    <div class="transport">
+      <button id="play" class="btn primary">▶ เล่น</button>
+      <button id="pause" class="btn" disabled>⏸ พัก</button>
+      <button id="stop" class="btn" disabled>■ หยุด</button>
+    </div>
+    <div class="fileops">
+      <button id="save" class="btn ghost" title="บันทึกโน้ตพร้อมการตั้งค่าเป็นไฟล์ .json">💾<span class="lbl"> เซฟ</span></button>
+      <button id="open" class="btn ghost" title="เปิดไฟล์โน้ตที่เคยบันทึกไว้">📂<span class="lbl"> เปิด</span></button>
+      <button id="wav" class="btn ghost" title="บันทึกเสียงเป็นไฟล์ .wav">⬇<span class="lbl"> .wav</span></button>
+      <input type="file" id="file" accept=".json,application/json" hidden>
+    </div>
   </div>
 </header>
 
