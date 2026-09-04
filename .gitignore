@@ -1,0 +1,12 @@
+# ไฟล์เสียงต้นฉบับและงานระหว่างทาง — ไม่ต้องเก็บเข้า repo
+*.wav
+*.m4a
+raw/
+scratch/
+
+# ระบบปฏิบัติการ / เอดิเตอร์
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
