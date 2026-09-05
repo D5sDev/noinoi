@@ -184,7 +184,7 @@ details[open] summary{margin-bottom:12px}
 
 /* ---------- มือถือ ---------- */
 @media(max-width:640px){
-  body{padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px))}   /* เผื่อที่ให้แถบปุ่มล่างจอ */
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px))}   /* เผื่อที่ให้แถบปุ่มล่างจอ */
   main{padding:13px;gap:13px}
   .panel{padding:13px}
 
@@ -208,17 +208,16 @@ details[open] summary{margin-bottom:12px}
   /* ปุ่มทั้งหมดย้ายลงแถบล่างจอ กดด้วยนิ้วโป้งได้ ไม่ต้องเลื่อนกลับขึ้นไปหา */
   .bar{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
-    margin:0;gap:8px;flex-wrap:nowrap;align-items:stretch;
-    padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    margin:0;gap:6px;flex-wrap:nowrap;align-items:stretch;
+    padding:7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
     background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
     border-top:1px solid var(--line);
   }
-  .bar .transport{flex:1;min-width:0;gap:6px;flex-wrap:nowrap}
-  .bar .fileops{flex:0 0 auto;gap:6px;flex-wrap:nowrap}
-  .bar .btn{padding:13px 2px;font-size:17px;line-height:1}
+  /* สองกลุ่มกว้างเท่ากัน ปุ่มในแต่ละกลุ่มก็เท่ากัน ผลคือทั้งหกปุ่มเท่ากันหมด */
+  .bar .transport,.bar .fileops{flex:1 1 0;min-width:0;gap:6px;flex-wrap:nowrap}
+  .bar .btn{flex:1 1 0;min-width:0;padding:11px 0;font-size:16px;line-height:1}
   .bar .lbl{display:none}              /* เหลือแค่ไอคอน กดง่ายและไม่กินที่ */
-  .transport .btn{flex:1;min-width:0}
-  .fileops .btn{flex:0 0 46px;color:var(--fg)}
+  .fileops .btn{color:var(--fg)}
 
   /* ปรับให้ไม่โดนซูมเองตอนแตะช่องกรอกบน iOS */
   select,input[type=number]{font-size:16px}
