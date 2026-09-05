@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoiNoi — แกะโน้ตจาก MIDI</title>
+<style>
+:root{
+  --bg:#14110d; --bg2:#1c1813; --line:#3a3025; --line2:#4d3f2e;
+  --fg:#f2e9db; --dim:#a2937d; --gold:#e0b24d; --gold-dim:#8a6d2c;
+  --red:#c8553d; --green:#5f9b6b; --blue:#5c8fb5;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(900px 500px at 12% -10%, #2a2118 0%, transparent 60%),
+    radial-gradient(700px 400px at 100% 0%, #241d2a 0%, transparent 55%),
+    var(--bg);
+  color:var(--fg);
+  font-family:'Sarabun','Noto Sans Thai','Leelawadee UI','Segoe UI',system-ui,sans-serif;
+  font-size:15px; line-height:1.55; min-height:100vh;
+}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:.2px}
+p{margin:0}
+
+/* header */
+.top{
+  position:sticky; top:0; z-index:20;
+  display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
+  padding:12px 20px; background:rgba(20,17,13,.88); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;
+  border-radius:12px;background:linear-gradient(145deg,var(--gold),#a97f27);
+  color:#20180a;font-size:21px;font-weight:700;
+  box-shadow:0 3px 14px rgba(224,178,77,.28);
+}
+.brand h1{font-size:19px;line-height:1.1}
+.brand p{font-size:12.5px;color:var(--dim)}
+.bar,.transport,.fileops{display:flex;gap:8px;flex-wrap:wrap}
+.pages{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.pages a{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:7px 15px;border-radius:7px;transition:.14s}
+.pages a:hover{color:var(--fg);background:#241e17}
+.pages a.on{background:linear-gradient(145deg,var(--gold),#bd8f30);color:#1d1608}
+
+/* buttons */
+.btn{
+  font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  padding:9px 16px;border-radius:9px;
+  border:1px solid var(--line2); background:var(--bg2); color:var(--fg);
+  transition:.14s;
+}
+.btn:hover{border-color:var(--gold-dim);background:#241e17}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(145deg,var(--gold),#bd8f30);border-color:#c99c34;color:#1d1608}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--dim)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:6px 13px;font-size:13px}
+
+/* layout */
+main{
+  max-width:1240px;margin:0 auto;padding:20px;
+  display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start;
+}
+.panel{
+  background:linear-gradient(180deg,rgba(38,32,24,.72),rgba(26,22,17,.72));
+  border:1px solid var(--line);border-radius:var(--r);padding:16px;
+  min-width:0;      /* ไม่งั้นตารางแทร็กที่กว้าง 660px จะดันทั้งหน้าให้เลื่อนซ้ายขวา */
+}
+.panel.wide{grid-column:1/-1}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.panel-head h2{font-size:14px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold)}
+.meta{font-size:12.5px;color:var(--dim)}
+
+/* รับไฟล์ */
+.drop{
+  border:1.5px dashed var(--line2);border-radius:12px;padding:26px 18px;text-align:center;
+  color:var(--dim);cursor:pointer;transition:.14s;background:rgba(16,14,10,.45);
+}
+.drop:hover,.drop.over{border-color:var(--gold);color:var(--fg);background:#241e17}
+.drop b{display:block;font-size:16.5px;color:var(--fg);margin-bottom:3px}
+.drop .ico{font-size:30px;line-height:1;margin-bottom:8px}
+.msg{margin-top:10px;font-size:13px;padding:9px 12px;border-radius:8px;display:none}
+.msg.on{display:block}
+.msg.err{background:rgba(200,85,61,.14);border:1px solid #7a3428;color:#eba793}
+.msg.ok{background:rgba(95,155,107,.13);border:1px solid #3f6b48;color:#a6d0af}
+
+/* ตาราง track */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.trk{width:100%;border-collapse:collapse;font-size:13px;min-width:660px}
+.trk th{
+  text-align:left;font-size:10.5px;letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--gold-dim);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+.trk td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.trk tbody tr{cursor:pointer;transition:.12s}
+.trk tbody tr:hover{background:#241e17}
+.trk tr.on{background:rgba(224,178,77,.13)}
+.trk tr.on td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
+.trk tr.dead{opacity:.38;cursor:not-allowed}
+.trk tr.dead:hover{background:none}
+.trk .num{font-variant-numeric:tabular-nums;color:var(--dim);text-align:right}
+.trk .nm{color:var(--fg);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.trk .prg{color:var(--dim)}
+.tag2{
+  display:inline-block;font-size:10.5px;padding:1px 8px;border-radius:20px;
+  border:1px solid var(--line2);color:var(--dim);margin-left:6px;vertical-align:1px;
+}
+.tag2.pick{border-color:var(--gold-dim);color:var(--gold)}
+.tag2.no{border-color:#6b3a2c;color:#c08a76}
+.hear{
+  border:1px solid var(--line2);background:#221d16;color:var(--dim);
+  border-radius:6px;width:28px;height:26px;cursor:pointer;font-size:11px;line-height:1;
+}
+.hear:hover{background:var(--gold);color:#1d1608;border-color:var(--gold)}
+
+/* ผลลัพธ์ */
+textarea#out{
+  width:100%;min-height:230px;resize:vertical;
+  background:#100e0a;color:var(--fg);
+  border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+  font-family:'Sarabun','Noto Sans Thai',ui-monospace,monospace;
+  font-size:19px;line-height:2.05;letter-spacing:1px;outline:none;
+}
+textarea#out:focus{border-color:var(--gold-dim)}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.stat{background:#100e0a;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:12px;color:var(--dim)}
+.stat b{color:var(--fg);font-variant-numeric:tabular-nums}
+.stat.warn{border-color:#7a4a2e;color:#d9a184}
+.stat.warn b{color:#f0b48c}
+.hint{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6}
+
+/* ตั้งค่า */
+.ctl{display:grid;gap:12px}
+.field{display:grid;gap:5px}
+.field > label{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:8px}
+.field > label b{color:var(--gold);font-variant-numeric:tabular-nums}
+select,input[type=number]{
+  font:inherit;font-size:14px;width:100%;
+  background:#100e0a;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none;
+}
+select:focus,input[type=number]:focus{border-color:var(--gold-dim)}
+input[type=range]{width:100%;accent-color:var(--gold);background:transparent}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.checks{display:flex;flex-wrap:wrap;gap:14px;padding-top:2px}
+.check{display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer;color:var(--fg)}
+.check input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+.subhint{font-size:11.5px;color:var(--dim);line-height:1.45}
+.empty{color:var(--dim);font-size:13.5px;padding:14px 2px}
+
+/* help */
+details summary{cursor:pointer;font-size:14px;color:var(--gold);letter-spacing:1.4px;text-transform:uppercase;font-weight:700}
+details[open] summary{margin-bottom:12px}
+.help{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:16px;font-size:13.5px}
+.help h3{font-size:13px;color:var(--gold);margin-bottom:6px}
+.help ul{margin:0;padding-left:18px}
+.help li{margin:3px 0}
+.help code{
+  background:#100e0a;border:1px solid var(--line);border-radius:5px;
+  padding:1px 6px;font-size:14px;font-family:'Sarabun','Noto Sans Thai',ui-monospace,monospace;
+}
+.note{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.7}
+
+@media(max-width:900px){ main{grid-template-columns:1fr} }
+
+/* ---------- มือถือ ---------- */
+@media(max-width:640px){
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px))}
+  main{padding:13px;gap:13px}
+  .panel{padding:13px}
+
+  /* ต้องเอา backdrop-filter ออก ไม่งั้น .top จะกลายเป็นกรอบอ้างอิงของลูกที่ position:fixed
+     แถบปุ่มจะไปเกาะก้นหัวเรื่องแทนที่จะลงไปก้นจอ */
+  .top{padding:9px 13px;gap:8px 10px;flex-wrap:wrap;backdrop-filter:none;background:rgba(20,17,13,.97)}
+  .top .brand{flex:0 1 auto;min-width:0;overflow:hidden}
+  .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:17px}
+  .brand p{display:none}
+  .brand{gap:9px}
+  .logo{width:34px;height:34px;flex-basis:34px;font-size:18px;border-radius:10px}
+  .pages{flex:0 1 auto;min-width:0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pages::-webkit-scrollbar{display:none}
+  .pages a{padding:6px 10px;font-size:12px;white-space:nowrap}
+
+  .bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    margin:0;gap:6px;flex-wrap:nowrap;align-items:stretch;
+    padding:7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
+    background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);
+  }
+  .bar .transport,.bar .fileops{flex:1 1 0;min-width:0;gap:6px;flex-wrap:nowrap}
+  .bar .btn{flex:1 1 0;min-width:0;padding:11px 0;font-size:16px;line-height:1}
+  .bar .lbl{display:none}
+  .fileops .btn{color:var(--fg)}
+
+  select,input[type=number]{font-size:16px}
+  .row2{grid-template-columns:1fr}
+  textarea#out{font-size:17px;line-height:1.95;min-height:190px}
+  .drop{padding:20px 14px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">♫</div>
+    <div>
+      <h1>NoiNoi</h1>
+      <p>แกะโน้ตจาก MIDI · แปลงเป็นโน้ตไทย</p>
+    </div>
+  </div>
+  <nav class="pages">
+    <a href="index.html">หน้าแรก</a>
+    <a href="thai.html">โน้ตไทย</a>
+    <a href="khlui.html">ขลุ่ย</a>
+    <a href="listen.html" class="on">แกะโน้ต</a>
+  </nav>
+  <div class="bar">
+    <div class="transport">
+      <button id="play" class="btn primary" disabled title="ฟังผลที่แปลงได้">▶<span class="lbl" id="playLbl"> ฟัง</span></button>
+      <button id="stop" class="btn" disabled title="หยุด">■<span class="lbl"> หยุด</span></button>
+    </div>
+    <div class="fileops">
+      <button id="send" class="btn ghost" disabled title="ส่งโน้ตไปหน้าเล่น — จะทับโน้ตที่ค้างอยู่ในหน้านั้น">🎼<span class="lbl"> ส่งต่อ</span></button>
+      <button id="save" class="btn ghost" disabled title="บันทึกเป็นไฟล์ .json ของ NoiNoi">💾<span class="lbl"> เซฟ</span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="panel wide">
+    <div class="panel-head">
+      <h2>ไฟล์ MIDI</h2>
+      <span class="meta" id="fileMeta"></span>
+    </div>
+    <div class="drop" id="drop">
+      <div class="ico">🎹</div>
+      <b>ลากไฟล์ .mid มาวางตรงนี้</b>
+      หรือคลิกเพื่อเลือกไฟล์ · อ่านในเครื่องล้วน ไม่มีการอัปโหลดไปไหน
+    </div>
+    <input type="file" id="file" accept=".mid,.midi,audio/midi" hidden>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section class="panel wide">
+    <div class="panel-head">
+      <h2>เลือกแทร็กทำนอง</h2>
+      <span class="meta" id="trkMeta">ยังไม่มีไฟล์</span>
+    </div>
+    <div class="tblwrap">
+      <table class="trk" id="trkTbl" hidden>
+        <thead>
+          <tr>
+            <th>#</th><th>ชื่อแทร็ก</th><th>เครื่องดนตรี</th>
+            <th class="num">โน้ต</th><th>ช่วงเสียง</th><th class="num">ซ้อนกัน</th><th>ฟัง</th>
+          </tr>
+        </thead>
+        <tbody id="trkBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="trkEmpty">เปิดไฟล์ MIDI ก่อน แล้วรายชื่อแทร็กจะขึ้นตรงนี้</p>
+    <p class="hint" id="trkHint" hidden>คลิกแถวเพื่อเลือกแทร็ก · ปุ่ม ♪ ฟังเสียงต้นฉบับของแทร็กนั้น 10 วินาที ตัดสินด้วยหูเร็วกว่าดูตัวเลข</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>โน้ตไทยที่แปลงได้</h2>
+      <button class="btn ghost sm" id="copy" disabled>คัดลอก</button>
+    </div>
+    <textarea id="out" spellcheck="false" placeholder="ผลลัพธ์จะขึ้นที่นี่ · แก้ไขต่อได้เลย"></textarea>
+    <div class="stats" id="stats"></div>
+    <p class="hint">แก้ในช่องนี้ได้ตามใจ ปุ่ม ฟัง / ส่งต่อ / เซฟ ใช้ข้อความที่เห็นอยู่ตรงนี้เสมอ</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>ตั้งค่าการแปลง</h2></div>
+    <div class="ctl">
+
+      <div class="field">
+        <label>คีย์ของเพลง <b id="keyAuto"></b></label>
+        <select id="key"></select>
+        <div class="subhint" id="keyNote">ระบบเดาให้จากโน้ตทั้งแทร็ก เปลี่ยนเองได้ถ้าเดาผิด</div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>จังหวะต่อ 1 ห้อง</label>
+          <select id="bpc">
+            <option value="1" selected>1 จังหวะ</option>
+            <option value="2">2 จังหวะ</option>
+            <option value="4">4 จังหวะ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ช่องต่อ 1 ห้อง</label>
+          <select id="spc">
+            <option value="1">1 ช่อง</option>
+            <option value="2">2 ช่อง</option>
+            <option value="4" selected>4 ช่อง</option>
+            <option value="8">8 ช่อง</option>
+          </select>
+        </div>
+      </div>
+      <div class="subhint" id="gridNote"></div>
+
+      <div class="row2">
+        <div class="field">
+          <label>ห้องต่อบรรทัด</label>
+          <input type="number" id="perLine" value="8" min="1" max="16" step="1">
+        </div>
+        <div class="field">
+          <label>เมื่อมีคอร์ด</label>
+          <select id="pick">
+            <option value="top" selected>เอาเสียงบนสุด</option>
+            <option value="bot">เอาเสียงล่างสุด</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>ความเร็ว <b><span id="tempoV">120</span> ห้อง/นาที</b></label>
+        <input type="range" id="tempo" min="20" max="180" step="1" value="120">
+        <div class="subhint" id="tempoNote"></div>
+      </div>
+
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="trim" checked> ตัดความเงียบตอนต้น</label>
+      </div>
+
+      <div class="field">
+        <label>ส่งต่อไปหน้า</label>
+        <select id="dest">
+          <option value="thai" selected>โน้ตไทย (เครื่องสังเคราะห์)</option>
+          <option value="khlui">ขลุ่ย (เสียงอัดจริง)</option>
+        </select>
+        <div class="subhint">ตั้งระบบเสียงเป็น <b>เทียบเปียโน</b> กับคีย์สากลให้อัตโนมัติ เพลงจะออกมาตรงคีย์เดิม</div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="panel wide">
+    <details>
+      <summary>เรื่องที่ควรรู้ก่อนใช้</summary>
+      <div class="help">
+        <div>
+          <h3>ทำไมต้องเลือกแทร็ก</h3>
+          <ul>
+            <li>โน้ตไทยเป็น<b>ทำนองเส้นเดียว</b> เลือกได้ทีละแทร็ก</li>
+            <li>แทร็กช่อง 10 คือกลอง ไม่มีระดับเสียง ระบบตัดทิ้งเสมอ</li>
+            <li>ระบบเดาแทร็กทำนองจากเสียงเฉลี่ยสูง โน้ตไม่ซ้อนกัน และชื่อแทร็ก</li>
+            <li>อยากได้หลายแนว ให้แปลงทีละแทร็กแล้วเซฟแยกไฟล์</li>
+          </ul>
+        </div>
+        <div>
+          <h3>ตัวที่แปลงไม่ตรง</h3>
+          <ul>
+            <li><b>ตัวนอกบันไดเสียง</b> — โน้ตไทยมี 7 ตัวต่อคู่แปด ไม่มีที่ให้ชาร์ปแฟลต ระบบปัดเข้าตัวใกล้สุดแล้วนับให้ดูในสถิติ</li>
+            <li><b>สามพยางค์ กับ สวิง</b> — ห้องไทยแบ่งได้แต่ 2 กับ 4 เพลง 3/4 หรือ 6/8 จะเพี้ยนจังหวะ</li>
+            <li><b>เปลี่ยนคีย์กลางเพลง</b> — ระบบคิดคีย์เดียวทั้งเพลง ท่อนที่เปลี่ยนคีย์จะเพี้ยน</li>
+          </ul>
+        </div>
+        <div>
+          <h3>ถ้าโน้ตหาย</h3>
+          <ul>
+            <li>ดูสถิติ <b>ชนกันในช่อง</b> ถ้าไม่เป็นศูนย์แปลว่ากริดหยาบไป</li>
+            <li>เพิ่ม <b>ช่องต่อห้อง</b> เป็น 8 หรือลด <b>จังหวะต่อห้อง</b> เป็น 1</li>
+            <li>เพลงเร็วมากอาจต้องยอมทิ้งตัวประดับบางตัว</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">
+        ระบบอ่านไฟล์ในเครื่องล้วน ไม่มีการส่งข้อมูลออกไปไหน · รองรับ MIDI format 0 และ 1
+        ไฟล์ที่ตั้งเวลาแบบ SMPTE (ใช้กับงานภาพ) จะเดาความเร็วให้ที่ 120 และอาจต้องปรับเอง
+      </p>
+    </details>
+  </section>
+
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* ══════════ 1. ระบบโน้ตไทย ══════════ */
+const NOTE = ['ด','ร','ม','ฟ','ซ','ล','ท'];
+const UP   = 'ํ';   // นิคหิต = สูงขึ้น 1 คู่แปด
+const DOWN = 'ฺ';   // พินทุ  = ต่ำลง 1 คู่แปด
+const SEMI = [0,2,4,5,7,9,11];
+
+const glyph = (deg,oct) =>
+  NOTE[deg] + (oct>0 ? UP.repeat(oct) : '') + (oct<0 ? DOWN.repeat(-oct) : '');
+
+// ครึ่งเสียง 0..11 -> ขั้นโน้ตไทยที่ใกล้ที่สุด
+// ตัวนอกบันไดเสียงอยู่กึ่งกลางพอดี เลือกตัวบนเสมอ (<= ไม่ใช่ <)
+// เพราะตัวนอกบันไดเสียงในเพลงสากลส่วนใหญ่เป็นตัวที่ยกขึ้น เช่น #4 #5
+// และการปัดขึ้นทำให้เส้นทำนองไม่แบน ทั้งขาขึ้นและขาลง
+function degOf(semi){
+  let bi=0, bd=99;
+  for(let i=0;i<7;i++){ const d=Math.abs(SEMI[i]-semi); if(d<=bd){ bd=d; bi=i; } }
+  return {deg:bi, off:bd};
+}
+
+const KEYNAME = ['C','C♯ / D♭','D','D♯ / E♭','E','F','F♯ / G♭','G','G♯ / A♭','A','A♯ / B♭','B'];
+
+/* ══════════ 2. อ่านไฟล์ MIDI ══════════ */
+const GM_FAM = ['เปียโน','ระฆังราง','ออร์แกน','กีตาร์','เบส','เครื่องสาย','วงประสาน','ทองเหลือง',
+                'เครื่องลิ้น','ขลุ่ย/ฟลุต','ซินธ์นำ','ซินธ์คลอ','ซินธ์เอฟเฟกต์','เครื่องพื้นบ้าน','เครื่องตี','เอฟเฟกต์'];
+const gmName = p => p<0 ? '—' : GM_FAM[p>>3] + ' ' + (p+1);
+
+function decodeText(dv,p,len){
+  try{
+    return new TextDecoder('utf-8',{fatal:false})
+      .decode(new Uint8Array(dv.buffer, dv.byteOffset+p, len))
+      .replace(/[\x00-\x1f]/g,'').trim();
+  }catch(e){
+    let s=''; for(let i=0;i<len;i++) s += String.fromCharCode(dv.getUint8(p+i));
+    return s.replace(/[\x00-\x1f]/g,'').trim();
+  }
+}
+
+function readTrack(dv, start, end){
+  let p = start, tick = 0, running = 0;
+  const notes = [], tempos = [], open = new Map(), chans = new Set();
+  let name = '', program = -1, timeSig = null;
+
+  const vlq = () => {
+    let v=0, b, n=0;
+    do{ if(p>=end) return v; b = dv.getUint8(p++); v = (v<<7)|(b&0x7f); }while((b&0x80) && ++n<4);
+    return v;
+  };
+
+  while(p < end){
+    tick += vlq();
+    if(p >= end) break;
+    let st = dv.getUint8(p);
+    // running status: ไบต์แรกไม่ใช่ status ให้ใช้ status ตัวเดิมซ้ำ
+    if(st & 0x80){ p++; if(st < 0xF0) running = st; }
+    else { st = running; if(!st) break; }
+
+    if(st === 0xFF){                                  // meta
+      const type = dv.getUint8(p++), len = vlq();
+      if(type === 0x03 && !name) name = decodeText(dv,p,len);
+      else if(type === 0x51 && len === 3)
+        tempos.push({tick, us:(dv.getUint8(p)<<16)|(dv.getUint8(p+1)<<8)|dv.getUint8(p+2)});
+      else if(type === 0x58 && len >= 2 && !timeSig)
+        timeSig = {num:dv.getUint8(p), den:1<<dv.getUint8(p+1)};
+      p += len;
+      if(type === 0x2F) break;
+    }
+    else if(st === 0xF0 || st === 0xF7){ p += vlq(); } // sysex ข้ามไป
+    else {
+      const cmd = st & 0xF0, ch = st & 0x0F;
+      chans.add(ch);
+      if(cmd === 0xC0){ if(program < 0) program = dv.getUint8(p); p += 1; }
+      else if(cmd === 0xD0){ p += 1; }
+      else if(cmd === 0x90 || cmd === 0x80){
+        const pit = dv.getUint8(p), vel = dv.getUint8(p+1); p += 2;
+        const k = ch*128 + pit;
+        if(cmd === 0x90 && vel > 0){
+          if(!open.has(k)) open.set(k, []);
+          open.get(k).push({tick, pitch:pit, vel, chan:ch});
+        }else{
+          const q = open.get(k);
+          if(q && q.length){ const n = q.shift(); n.dur = Math.max(1, tick-n.tick); notes.push(n); }
+        }
+      }
+      else p += 2;
+    }
+  }
+  // โน้ตที่ไม่มี note-off ปิดให้ที่ท้ายแทร็ก
+  for(const q of open.values()) for(const n of q){ n.dur = Math.max(1, tick-n.tick); notes.push(n); }
+  notes.sort((a,b) => a.tick-b.tick || a.pitch-b.pitch);
+  return {name, program, timeSig, notes, tempos, chans:[...chans].sort((a,b)=>a-b)};
+}
+
+function parseMidi(ab){
+  const dv = new DataView(ab);
+  let p = 0;
+  const need = n => { if(p+n > dv.byteLength) throw new Error('ไฟล์ขาดกลางคัน อ่านต่อไม่ได้'); };
+  const tag = () => { need(4); let s=''; for(let i=0;i<4;i++) s += String.fromCharCode(dv.getUint8(p++)); return s; };
+  const u32 = () => { need(4); const v = dv.getUint32(p); p += 4; return v; };
+  const u16 = () => { need(2); const v = dv.getUint16(p); p += 2; return v; };
+
+  if(tag() !== 'MThd') throw new Error('ไม่ใช่ไฟล์ MIDI — ไม่พบหัวไฟล์ MThd');
+  const hlen = u32();
+  const format = u16(); u16(); const division = u16();
+  p += Math.max(0, hlen-6);
+
+  let ppq, smpte = false;
+  if(division & 0x8000){                       // ตั้งเวลาแบบ SMPTE เดาที่ 120 BPM
+    smpte = true;
+    const fps = 256 - (division >> 8);
+    ppq = Math.max(24, Math.round(fps * (division & 0xFF) / 2));
+  }else ppq = division || 96;
+
+  const tracks = [];
+  while(p + 8 <= dv.byteLength && tracks.length < 128){
+    const t = tag(), len = u32();
+    const stop = Math.min(p+len, dv.byteLength);
+    if(t === 'MTrk') tracks.push(readTrack(dv, p, stop));
+    p += len;                                  // ก้อนแปลกปลอมข้ามไปเฉย ๆ
+  }
+  if(!tracks.length) throw new Error('ไฟล์นี้ไม่มีแทร็กเลย');
+  return {format, ppq, smpte, tracks};
+}
+
+/* แผนที่ความเร็ว — format 1 เก็บ tempo ไว้แทร็กเดียวแต่มีผลทุกแทร็ก */
+function tempoMap(mid){
+  const ev = [];
+  for(const t of mid.tracks) for(const e of t.tempos) ev.push(e);
+  ev.sort((a,b) => a.tick-b.tick);
+  const map = [{tick:0, sec:0, us:500000}];
+  for(const e of ev){
+    if(e.tick <= 0){ map[0].us = e.us; continue; }
+    const last = map[map.length-1];
+    if(e.tick < last.tick) continue;
+    map.push({tick:e.tick, sec:last.sec + (e.tick-last.tick)*last.us/1e6/mid.ppq, us:e.us});
+  }
+  return map;
+}
+function tickToSec(map, ppq, tick){
+  let e = map[0];
+  for(let i=map.length-1;i>=0;i--) if(map[i].tick <= tick){ e = map[i]; break; }
+  return e.sec + (tick-e.tick)*e.us/1e6/ppq;
+}
+
+/* ══════════ 3. วิเคราะห์แทร็ก ══════════ */
+function analyse(tr, ppq){
+  const n = tr.notes;
+  const st = {name:tr.name, program:tr.program, chans:tr.chans,
+              drum:tr.chans.includes(9), count:n.length,
+              lo:0, hi:0, mean:0, poly:0, endTick:0};
+  if(!n.length) return st;
+  const tol = ppq/8;
+  let sum=0, lo=127, hi=0, ov=0, end=0;
+  for(let i=0;i<n.length;i++){
+    sum += n[i].pitch;
+    if(n[i].pitch < lo) lo = n[i].pitch;
+    if(n[i].pitch > hi) hi = n[i].pitch;
+    end = Math.max(end, n[i].tick + n[i].dur);
+    for(let j=i+1;j<n.length && n[j].tick < n[i].tick+n[i].dur-tol;j++){ ov++; break; }
+  }
+  st.mean = sum/n.length; st.lo = lo; st.hi = hi;
+  st.poly = ov/n.length; st.endTick = end;
+  return st;
+}
+
+function melodyScore(st){
+  if(st.drum || !st.count) return -1e9;
+  let s = (st.mean-60)*1.6 - st.poly*120;
+  if(st.program >= 32 && st.program <= 39) s -= 70;   // เบส
+  if(st.program >= 24 && st.program <= 31) s -= 10;   // กีตาร์ มักเล่นคอร์ด
+  if(st.mean < 48) s -= 40;
+  if(st.count < 8) s -= 60;
+  if(/melod|vocal|lead|sing|voice|main|solo|ทำนอง|ร้อง/i.test(st.name)) s += 90;
+  if(/bass|drum|perc|chord|pad|string|harmon|เบส|กลอง|ประสาน|คลอ/i.test(st.name)) s -= 60;
+  return s;
+}
+
+/* ══════════ 4. หาคีย์ (Krumhansl–Schmuckler) ══════════ */
+const KS_MAJ = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+const KS_MIN = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+
+function detectKey(notes, ppq){
+  const h = new Array(12).fill(0);
+  for(const n of notes) h[n.pitch % 12] += Math.min(n.dur, ppq*2);
+  const tot = h.reduce((a,b)=>a+b,0) || 1;
+
+  const corr = (prof, rot) => {
+    let mx=0, my=0;
+    const x = [], y = [];
+    for(let i=0;i<12;i++){ x.push(h[(i+rot)%12]/tot); y.push(prof[i]); }
+    for(let i=0;i<12;i++){ mx += x[i]/12; my += y[i]/12; }
+    let num=0, dx=0, dy=0;
+    for(let i=0;i<12;i++){ const a=x[i]-mx, b=y[i]-my; num+=a*b; dx+=a*a; dy+=b*b; }
+    return num/Math.sqrt(dx*dy || 1e-9);
+  };
+
+  let best = {root:0, minor:false, r:-2};
+  for(let r=0;r<12;r++){
+    const cm = corr(KS_MAJ,r), cn = corr(KS_MIN,r);
+    if(cm > best.r) best = {root:r, minor:false, r:cm};
+    if(cn > best.r) best = {root:r, minor:true,  r:cn};
+  }
+  // ไมเนอร์เขียนเป็นเมเจอร์คู่ขนาน เสียงหลักจะไปตกที่ ล ตามที่คนไทยแกะเพลงฝรั่งกัน
+  best.maj = best.minor ? (best.root+3)%12 : best.root;
+  return best;
+}
+
+/* ══════════ 5. แปลงเป็นโน้ตไทย ══════════ */
+// grid: 0 = เงียบ, -1 = ยืดเสียง, >0 = เลขโน้ต MIDI
+function buildGrid(notes, ppq, cfg){
+  const step = ppq*cfg.bpc/cfg.spc;
+  const q = t => Math.round(t/step);
+  const picked = [];
+  let clash = 0, i = 0;
+
+  while(i < notes.length){
+    const s = q(notes[i].tick);
+    let j = i, best = notes[i];
+    while(j < notes.length && q(notes[j].tick) === s){
+      if(cfg.top ? notes[j].pitch > best.pitch : notes[j].pitch < best.pitch) best = notes[j];
+      j++;
+    }
+    if(j-i > 1) clash += j-i-1;
+    picked.push({s, e:Math.max(s+1, q(best.tick+best.dur)), pitch:best.pitch});
+    i = j;
+  }
+  if(!picked.length) return {grid:[], clash:0};
+
+  const off   = cfg.trim ? picked[0].s : 0;
+  const total = Math.max(0, picked[picked.length-1].e - off);
+  const grid  = new Array(total).fill(0);
+  for(let k=0;k<picked.length;k++){
+    const n = picked[k], s = n.s-off;
+    let e = n.e-off;
+    if(k+1 < picked.length) e = Math.min(e, picked[k+1].s-off);   // ตัวถัดไปมาถึงก่อน ให้หยุดเสียง
+    if(s < 0 || s >= grid.length) continue;
+    grid[s] = n.pitch;
+    for(let x=s+1; x<e && x<grid.length; x++) grid[x] = -1;
+  }
+  return {grid, clash};
+}
+
+function toThai(grid, cfg, majRoot){
+  const rootMidi = 60 + majRoot;                    // ตัว ด ที่ช่วงเสียง 4 ของหน้าเล่น
+  const octs = [];
+  for(const v of grid) if(v > 0) octs.push(Math.floor((v-rootMidi)/12));
+  octs.sort((a,b) => a-b);
+  const med   = octs.length ? octs[Math.floor(octs.length/2)] : 0;
+  const oct   = Math.max(2, Math.min(6, 4+med));    // เลือกช่วงเสียงให้เครื่องหมายคู่แปดน้อยที่สุด
+  const zero  = rootMidi + (oct-4)*12;
+
+  const cells = [], snap = [];
+  let outside = 0, count = 0;
+  for(let i=0;i<grid.length;i+=cfg.spc){
+    let cell = '';
+    for(let j=0;j<cfg.spc;j++){
+      const v = grid[i+j];
+      if(v === undefined || v === 0){ cell += '0'; snap.push(0); }
+      else if(v === -1){ cell += '-'; snap.push(-1); }
+      else{
+        count++;
+        const n  = v-zero;
+        const oc = Math.floor(n/12), pc = n-oc*12;
+        const d  = degOf(pc);
+        if(d.off) outside++;
+        cell += glyph(d.deg, oc);
+        snap.push(zero + oc*12 + SEMI[d.deg]);      // เสียงจริงหลังปัดเข้าบันไดเสียง
+      }
+    }
+    cells.push(cell);
+  }
+  const lines = [];
+  for(let i=0;i<cells.length;i+=cfg.perLine) lines.push(cells.slice(i,i+cfg.perLine).join(' '));
+  return {text:lines.join('\n'), snap, outside, count, oct, cells:cells.length};
+}
+
+/* ══════════ 6. เสียงตัวอย่าง ══════════ */
+const INST = {
+  khlui:{wave:'triangle', attack:.055, release:.10, vib:4.6, vibDepth:.005, breath:.055, filter:6},
+};
+let ac = null, graph = null, playing = false, pIdx = 0, pTime = 0, pTimer = 0;
+
+const ensureCtx = () => (ac = ac || new (window.AudioContext||window.webkitAudioContext)());
+const midiHz = p => 440*Math.pow(2,(p-69)/12);
+
+function buildGraph(ctx){
+  const master = ctx.createGain(); master.gain.value = .8;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -14; comp.ratio.value = 3.5; comp.release.value = .28;
+  const bus = ctx.createGain();
+  bus.connect(comp); comp.connect(master); master.connect(ctx.destination);
+  return {bus, master};
+}
+
+function noiseBuf(ctx){
+  const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate*.6), ctx.sampleRate);
+  const d = b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+  return b;
+}
+
+function playTone(ctx,bus,freq,t0,dur){
+  const P = INST.khlui;
+  const d = Math.max(dur,.09), a = P.attack, r = P.release;
+  const g = ctx.createGain(); g.connect(bus);
+  g.gain.setValueAtTime(.0001,t0);
+  g.gain.linearRampToValueAtTime(.50, t0+a);
+  g.gain.setValueAtTime(.50, t0+Math.max(a,d-r*.5));
+  g.gain.exponentialRampToValueAtTime(.0006, t0+d+r);
+  g.gain.linearRampToValueAtTime(0, t0+d+r+.02);
+
+  const o = ctx.createOscillator(); o.type = P.wave;
+  o.frequency.setValueAtTime(freq,t0);
+  const lfo = ctx.createOscillator(); lfo.frequency.value = P.vib;
+  const lg = ctx.createGain();
+  lg.gain.setValueAtTime(0,t0);
+  lg.gain.linearRampToValueAtTime(freq*P.vibDepth, t0+Math.min(.3,d));
+  lfo.connect(lg); lg.connect(o.frequency);
+  const f = ctx.createBiquadFilter(); f.type = 'lowpass';
+  f.frequency.value = Math.min(freq*P.filter,13000); f.Q.value = .7;
+  o.connect(f); f.connect(g);
+  o.start(t0); o.stop(t0+d+r+.06);
+  lfo.start(t0); lfo.stop(t0+d+r+.06);
+
+  const n = ctx.createBufferSource(); n.buffer = noiseBuf(ctx);
+  const nf = ctx.createBiquadFilter(); nf.type = 'bandpass';
+  nf.frequency.value = Math.min(freq*2,12000); nf.Q.value = .8;
+  const ng = ctx.createGain();
+  ng.gain.setValueAtTime(P.breath,t0);
+  ng.gain.exponentialRampToValueAtTime(.0001, t0+Math.min(d,.9));
+  n.connect(nf); nf.connect(ng); ng.connect(g);
+  n.start(t0); n.stop(t0+Math.min(d,.9)+.02);
+}
+
+function stopSound(){
+  playing = false;
+  clearTimeout(pTimer);
+  if(graph && ac){
+    const t = ac.currentTime;
+    try{
+      graph.master.gain.cancelScheduledValues(t);
+      graph.master.gain.setValueAtTime(graph.master.gain.value,t);
+      graph.master.gain.linearRampToValueAtTime(0, t+.06);
+    }catch(e){}
+    const g = graph; graph = null;
+    setTimeout(() => { try{ g.master.disconnect(); }catch(e){} }, 260);
+  }
+  $('#play').disabled = !result;
+  $('#stop').disabled = true;
+}
+
+// เล่นผลที่แปลงแล้ว ใช้ตารางเวลาแบบมองล่วงหน้า เพลงยาวแค่ไหนก็ไม่กินหน่วยความจำ
+function startPreview(){
+  if(!result || !result.snap.length) return;
+  stopSound();
+  const ctx = ensureCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  graph = buildGraph(ctx);
+  playing = true; pIdx = 0; pTime = ctx.currentTime + .12;
+  $('#play').disabled = true; $('#stop').disabled = false;
+  pump();
+}
+function pump(){
+  if(!playing || !graph) return;
+  const arr  = result.snap;
+  const cfg  = readCfg();
+  const base = (60/cfg.tempo)/cfg.spc;
+  const horizon = ac.currentTime + .3;
+  let guard = 0;
+  while(pTime < horizon && guard++ < 512){
+    if(pIdx >= arr.length){
+      const end = pTime;
+      pTimer = setTimeout(stopSound, Math.max(0,(end-ac.currentTime)*1000)+300);
+      playing = false;
+      return;
+    }
+    const v = arr[pIdx];
+    if(v > 0){
+      let d = base;
+      for(let j=pIdx+1;j<arr.length && arr[j]===-1;j++) d += base;
+      playTone(ac, graph.bus, midiHz(v), pTime, d);
+    }
+    pTime += base; pIdx++;
+  }
+  pTimer = setTimeout(pump, 45);
+}
+
+// ฟังเสียงต้นฉบับของแทร็ก 10 วินาทีแรก ตัดสินว่าใช่ทำนองไหม
+function auditionTrack(ti){
+  const tr = mid && mid.tracks[ti];
+  if(!tr || !tr.notes.length) return;
+  stopSound();
+  const ctx = ensureCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  graph = buildGraph(ctx);
+  const t0 = ctx.currentTime + .1;
+  const first = tickToSec(tmap, mid.ppq, tr.notes[0].tick);
+  let n = 0;
+  for(const nt of tr.notes){
+    const s = tickToSec(tmap, mid.ppq, nt.tick) - first;
+    if(s > 10) break;
+    const e = tickToSec(tmap, mid.ppq, nt.tick+nt.dur) - first;
+    playTone(ctx, graph.bus, midiHz(nt.pitch), t0+s, Math.max(.08, Math.min(e-s, 2)));
+    if(++n > 400) break;
+  }
+  $('#stop').disabled = false;
+  pTimer = setTimeout(stopSound, 10600);
+}
+
+/* ══════════ 7. UI ══════════ */
+let mid = null, tmap = null, stats = [], sel = -1, result = null, srcTempo = 120;
+
+const NOTEVAL = {1:'ตัวกลม',2:'ตัวขาว',4:'ตัวดำ',8:'เขบ็ต 1 ชั้น',16:'เขบ็ต 2 ชั้น',32:'เขบ็ต 3 ชั้น',64:'เขบ็ต 4 ชั้น'};
+
+function readCfg(){
+  return {
+    bpc     : +$('#bpc').value,
+    spc     : +$('#spc').value,
+    perLine : Math.max(1, Math.min(16, +$('#perLine').value||8)),
+    top     : $('#pick').value === 'top',
+    trim    : $('#trim').checked,
+    tempo   : +$('#tempo').value,
+    majRoot : +$('#key').value,
+  };
+}
+
+function msg(text, kind){
+  const el = $('#msg');
+  el.className = 'msg on ' + (kind||'ok');
+  el.textContent = text;
+}
+function clearMsg(){ $('#msg').className = 'msg'; }
+
+function fillKeySelect(){
+  const el = $('#key');
+  el.innerHTML = KEYNAME.map((n,i) => '<option value="'+i+'">'+n+' เมเจอร์</option>').join('');
+}
+
+function gridNote(){
+  const c = readCfg();
+  const val = 4*c.spc/c.bpc;
+  const nm = NOTEVAL[val] || ('1/'+val);
+  $('#gridNote').textContent = '1 ช่อง = โน้ต' + nm + ' · ละเอียดที่สุดที่เก็บได้คือระดับนี้';
+}
+
+function drawTracks(){
+  const body = $('#trkBody');
+  body.innerHTML = '';
+  stats.forEach((st,i) => {
+    const tr = document.createElement('tr');
+    const dead = st.drum || !st.count;
+    tr.className = (i===sel ? 'on ' : '') + (dead ? 'dead' : '');
+    const badge = st.drum ? '<span class="tag2 no">กลอง</span>'
+                : !st.count ? '<span class="tag2 no">ไม่มีโน้ต</span>'
+                : i===sel ? '<span class="tag2 pick">เลือกอยู่</span>' : '';
+    const range = st.count ? pitchName(st.lo)+'–'+pitchName(st.hi) : '—';
+    tr.innerHTML =
+      '<td class="num">'+(i+1)+'</td>'+
+      '<td class="nm">'+esc(st.name || '(ไม่มีชื่อ)')+badge+'</td>'+
+      '<td class="prg">'+esc(gmName(st.program))+'</td>'+
+      '<td class="num">'+st.count+'</td>'+
+      '<td class="prg">'+range+'</td>'+
+      '<td class="num">'+(st.count ? Math.round(st.poly*100)+'%' : '—')+'</td>';
+    // ปุ่มฟังสร้างเป็นโหนดจริง ไม่ผ่าน innerHTML จะได้ผูก handler ตรง ๆ
+    const td = document.createElement('td');
+    if(!dead){
+      const b = document.createElement('button');
+      b.className = 'hear'; b.textContent = '♪'; b.title = 'ฟังแทร็กนี้';
+      b.addEventListener('click', e => { e.stopPropagation(); auditionTrack(i); });
+      td.appendChild(b);
+    }
+    tr.appendChild(td);
+    if(!dead) tr.addEventListener('click', () => { sel = i; drawTracks(); convert(); });
+    body.appendChild(tr);
+  });
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const pitchName = p => PC[p%12] + (Math.floor(p/12)-1);
+
+function loadBuffer(ab, fname){
+  try{
+    mid = parseMidi(ab);
+  }catch(e){
+    mid = null; result = null; sel = -1;
+    $('#trkTbl').hidden = true; $('#trkEmpty').hidden = false; $('#trkHint').hidden = true;
+    $('#trkEmpty').textContent = 'เปิดไฟล์ MIDI ก่อน แล้วรายชื่อแทร็กจะขึ้นตรงนี้';
+    $('#trkMeta').textContent = 'ยังไม่มีไฟล์';
+    setOut('', null);
+    msg('เปิดไฟล์ไม่ได้ — ' + e.message, 'err');
+    return;
+  }
+  tmap = tempoMap(mid);
+  stats = mid.tracks.map(t => analyse(t, mid.ppq));
+
+  // ความเร็วต้นฉบับ กับ จังหวะต่อห้อง ที่ทำให้ค่าอยู่ในช่วงที่หน้าเล่นรับได้
+  srcTempo = 60e6/tmap[0].us;
+  let bpc = 1;
+  for(const b of [1,2,4]){ bpc = b; if(srcTempo/b <= 140) break; }
+  $('#bpc').value = String(bpc);
+  $('#tempo').value = String(Math.max(20, Math.min(180, Math.round(srcTempo/bpc))));
+  $('#tempo').dispatchEvent(new Event('input'));      // ป้ายตัวเลขต้องตามค่าที่เพิ่งตั้ง
+
+  // เลือกแทร็กที่น่าจะเป็นทำนองให้ก่อน
+  let bestScore = -Infinity; sel = -1;
+  stats.forEach((st,i) => { const s = melodyScore(st); if(s > bestScore){ bestScore = s; sel = i; } });
+  if(sel >= 0 && (stats[sel].drum || !stats[sel].count)) sel = -1;
+
+  const sig = mid.tracks.map(t => t.timeSig).filter(Boolean)[0];
+  const total = Math.max(...stats.map(s => s.endTick), 0);
+  const secs = tickToSec(tmap, mid.ppq, total);
+  $('#fileMeta').textContent =
+    fname + ' · format ' + mid.format + ' · ' + mid.tracks.length + ' แทร็ก · ' +
+    mid.ppq + ' ticks/จังหวะ · ' + Math.round(srcTempo) + ' BPM' +
+    (sig ? ' · ' + sig.num + '/' + sig.den : '') +
+    ' · ' + Math.floor(secs/60) + ':' + String(Math.round(secs%60)).padStart(2,'0');
+
+  $('#trkTbl').hidden = false; $('#trkEmpty').hidden = true; $('#trkHint').hidden = false;
+  $('#trkMeta').textContent = mid.tracks.length + ' แทร็ก · ระบบเดาให้แล้ว เปลี่ยนได้';
+  drawTracks();
+
+  const warn = [];
+  if(mid.smpte) warn.push('ไฟล์นี้ตั้งเวลาแบบ SMPTE เดาความเร็วให้ที่ 120 อาจต้องปรับเอง');
+  if(sig && sig.den === 8 && sig.num % 3 === 0) warn.push('เพลงนี้เป็นจังหวะ ' + sig.num + '/' + sig.den + ' ห้องไทยแบ่งได้แต่ 2 กับ 4 จังหวะจะเพี้ยน');
+  if(sig && sig.num === 3) warn.push('เพลงนี้เป็นจังหวะ 3/4 ห้องไทยแบ่งได้แต่ 2 กับ 4 จังหวะจะเพี้ยน');
+  if(sel < 0) warn.push('ไม่พบแทร็กที่มีระดับเสียง มีแต่กลองหรือแทร็กว่าง');
+
+  if(warn.length) msg(warn.join(' · '), 'err');
+  else msg('อ่านไฟล์สำเร็จ เลือกแทร็ก “' + (stats[sel].name || 'แทร็ก '+(sel+1)) + '” ให้ก่อน ฟังแล้วเปลี่ยนได้', 'ok');
+
+  convert(true);
+}
+
+function setOut(text, st){
+  $('#out').value = text;
+  const has = !!text;
+  $('#play').disabled = !has || playing;
+  $('#send').disabled = !has;
+  $('#save').disabled = !has;
+  $('#copy').disabled = !has;
+
+  const box = $('#stats');
+  if(!st){ box.innerHTML = ''; return; }
+  const pct = st.count ? Math.round(st.outside/st.count*100) : 0;
+  const parts = [
+    '<span class="stat">โน้ต <b>'+st.count+'</b> ตัว</span>',
+    '<span class="stat">ห้อง <b>'+st.cells+'</b></span>',
+    '<span class="stat">ช่วงเสียง <b>'+st.oct+'</b></span>',
+    '<span class="stat'+(st.outside?' warn':'')+'">นอกบันไดเสียง <b>'+st.outside+'</b> ตัว ('+pct+'%)</span>',
+    '<span class="stat'+(st.clash?' warn':'')+'">ชนกันในช่อง <b>'+st.clash+'</b> ตัว</span>',
+  ];
+  box.innerHTML = parts.join('');
+}
+
+function convert(auto){
+  if(!mid || sel < 0 || !stats[sel] || !stats[sel].count){ result = null; setOut('', null); return; }
+  const notes = mid.tracks[sel].notes.filter(n => n.chan !== 9);
+  if(!notes.length){ result = null; setOut('', null); return; }
+
+  if(auto){                                   // เดาคีย์ให้ตอนเปลี่ยนแทร็กเท่านั้น ไม่ทับที่ผู้ใช้ตั้งเอง
+    const k = detectKey(notes, mid.ppq);
+    $('#key').value = String(k.maj);
+    $('#keyAuto').textContent = KEYNAME[k.root] + (k.minor ? ' ไมเนอร์' : ' เมเจอร์');
+    $('#keyNote').textContent = k.minor
+      ? 'เพลงไมเนอร์ เขียนเป็น ' + KEYNAME[k.maj] + ' เมเจอร์ เสียงหลักจะไปตกที่ ล ตามธรรมเนียมไทย'
+      : 'ระบบเดาให้จากโน้ตทั้งแทร็ก เปลี่ยนเองได้ถ้าเดาผิด';
+  }
+
+  const cfg = readCfg();
+  const g = buildGrid(notes, mid.ppq, cfg);
+  const t = toThai(g.grid, cfg, cfg.majRoot);
+  result = {snap:t.snap, oct:t.oct};
+  setOut(t.text, {count:t.count, cells:t.cells, oct:t.oct, outside:t.outside, clash:g.clash});
+}
+
+function buildSave(){
+  const cfg  = readCfg();
+  const dest = $('#dest').value;
+  return {
+    app:'noinoi', version:1, variant:dest,
+    notes: $('#out').value,
+    settings:{
+      tempo:String(cfg.tempo), inst:'khlui', tuning:'12tet',
+      key:'w'+cfg.majRoot, oct:String(result ? result.oct : 4), base:'440',
+      chan:'2', vol:'80', chingVol:'25',
+      ching:false, loop:false, follow:true,
+      perLine:String(cfg.perLine),
+    },
+  };
+}
+
+function doSend(){
+  const d = buildSave();
+  try{ localStorage.setItem('noinoi:'+d.variant, JSON.stringify(d)); }
+  catch(e){ msg('เบราว์เซอร์ไม่ยอมให้บันทึก — กดเซฟเป็น .json แล้วเปิดในหน้าโน้ตแทน', 'err'); return; }
+  location.href = d.variant + '.html';
+}
+
+function doSave(){
+  const d = buildSave();
+  d.saved = new Date().toISOString();
+  const t = new Date(), z = n => String(n).padStart(2,'0');
+  const name = 'noinoi-midi-' + t.getFullYear()+z(t.getMonth()+1)+z(t.getDate())
+             + '-' + z(t.getHours())+z(t.getMinutes()) + '.json';
+  const url = URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function init(){
+  fillKeySelect();
+  gridNote();
+  $('#tempoNote').textContent = '';
+
+  const fileEl = $('#file'), dropEl = $('#drop');
+  dropEl.addEventListener('click', () => fileEl.click());
+  ['dragenter','dragover'].forEach(ev => dropEl.addEventListener(ev, e => {
+    e.preventDefault(); dropEl.classList.add('over');
+  }));
+  ['dragleave','drop'].forEach(ev => dropEl.addEventListener(ev, e => {
+    e.preventDefault(); dropEl.classList.remove('over');
+  }));
+  dropEl.addEventListener('drop', e => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) readFile(f);
+  });
+  fileEl.addEventListener('change', () => { if(fileEl.files[0]) readFile(fileEl.files[0]); });
+
+  function readFile(f){
+    clearMsg();
+    stopSound();
+    const r = new FileReader();
+    r.onload = () => loadBuffer(r.result, f.name);
+    r.onerror = () => msg('อ่านไฟล์ไม่สำเร็จ', 'err');
+    r.readAsArrayBuffer(f);
+  }
+
+  $('#play').addEventListener('click', startPreview);
+  $('#stop').addEventListener('click', stopSound);
+  $('#send').addEventListener('click', doSend);
+  $('#save').addEventListener('click', doSave);
+  $('#copy').addEventListener('click', () => {
+    const el = $('#out');
+    el.select();
+    try{ document.execCommand('copy'); msg('คัดลอกโน้ตแล้ว', 'ok'); }catch(e){}
+    el.setSelectionRange(0,0);
+  });
+
+  for(const id of ['bpc','spc','perLine','pick','trim','key']){
+    $('#'+id).addEventListener('change', () => { gridNote(); convert(); });
+  }
+  $('#tempo').addEventListener('input', () => {
+    $('#tempoV').textContent = $('#tempo').value;
+    const c = readCfg();
+    const bpm = Math.round(c.tempo*c.bpc), src = Math.round(srcTempo);
+    $('#tempoNote').textContent = 'เท่ากับ ' + bpm + ' BPM แบบสากล'
+      + (mid && bpm !== src ? ' · ต้นฉบับ ' + src + ' BPM' : '');
+  });
+  $('#bpc').addEventListener('change', () => {
+    if(mid) $('#tempo').value = String(Math.max(20, Math.min(180, Math.round(srcTempo/readCfg().bpc))));
+    $('#tempo').dispatchEvent(new Event('input'));
+  });
+  $('#out').addEventListener('input', () => {
+    const has = !!$('#out').value;
+    $('#send').disabled = !has; $('#save').disabled = !has; $('#copy').disabled = !has;
+  });
+  $('#tempo').dispatchEvent(new Event('input'));
+
+  document.addEventListener('keydown', e => {
+    if(e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT'
+       && e.target.tagName !== 'SELECT' && e.target.tagName !== 'BUTTON'){
+      e.preventDefault();
+      playing ? stopSound() : startPreview();
+    }
+  });
+}
+
+init();
+})();
+</script>
+</body>
+</html>

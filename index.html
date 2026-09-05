@@ -38,7 +38,7 @@ h1{margin:0;font-size:36px;letter-spacing:.5px}
 .lead b{color:var(--fg);font-weight:600}
 
 /* การ์ดสองใบ */
-.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
 .card{
   display:block;text-decoration:none;
   background:linear-gradient(180deg,rgba(38,32,24,.75),rgba(26,22,17,.75));
@@ -125,6 +125,19 @@ footer a:hover{text-decoration:underline}
         <li>เลือกชุดเสียงให้เองตามชนิดคีย์</li>
         <li>ลูกสะบัด <code>(ดรม)</code> และเสียงควง <code>ซ*</code></li>
         <li>โน้ตยาววน loop โดยไม่มีรอยต่อ</li>
+      </ul>
+      <div class="go">เปิดหน้านี้ →</div>
+    </a>
+
+    <a class="card" href="listen.html">
+      <div class="ico">🎹</div>
+      <div class="sub">แปลงจากไฟล์ MIDI</div>
+      <h2>แกะโน้ต</h2>
+      <ul>
+        <li>ลากไฟล์ .mid มาวาง ได้โน้ตไทยทันที</li>
+        <li>เดาแทร็กทำนองกับคีย์ของเพลงให้</li>
+        <li>กดฟังทีละแทร็กก่อนเลือก</li>
+        <li>ส่งต่อเข้าหน้าเล่นได้เลย</li>
       </ul>
       <div class="go">เปิดหน้านี้ →</div>
     </a>
