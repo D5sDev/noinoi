@@ -99,6 +99,25 @@ main{
 .loopbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
 .loopbar .meta{margin-left:auto}
 
+/* เนื้อร้อง */
+.lyr{
+  max-height:300px;overflow-y:auto;background:#100e0a;border:1px solid var(--line);border-radius:8px;
+  padding:8px 6px;font-size:17px;line-height:1.85;
+}
+.ln{display:flex;align-items:baseline;gap:8px;padding:1px 8px;border-radius:6px;color:var(--dim);cursor:pointer;transition:.12s}
+.ln:hover{background:#241e17;color:var(--fg)}
+.ln.now{background:rgba(224,178,77,.09);color:var(--fg)}
+.ln.done{color:#7d7060}
+.ln.notime{cursor:default;color:#6b5c46}
+.ln .tx{white-space:pre-wrap;word-break:break-word;min-width:0}
+.ln .ch.on{color:var(--gold)}
+.ln .lp{
+  margin-left:auto;flex:0 0 auto;border:1px solid var(--line2);background:#221d16;color:var(--dim);
+  border-radius:6px;width:28px;height:24px;cursor:pointer;font-size:12px;line-height:1;opacity:0;transition:.12s;
+}
+.ln:hover .lp,.ln.now .lp{opacity:1}
+.ln .lp:hover{background:var(--gold);color:#1d1608;border-color:var(--gold)}
+
 /* ตาราง track */
 .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .trk{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
@@ -190,6 +209,8 @@ details[open] summary{margin-bottom:12px}
   .row2{grid-template-columns:1fr}
   .pos{gap:8px}
   .drop{padding:20px 14px}
+  .lyr{max-height:240px;font-size:16px}
+  .ln .lp{opacity:1}
 }
 </style>
 </head>
@@ -230,9 +251,9 @@ details[open] summary{margin-bottom:12px}
     <div class="drop" id="drop">
       <div class="ico">🎹</div>
       <b>ลากไฟล์ .mid หรือ .kar มาวางตรงนี้</b>
-      หรือคลิกเพื่อเลือกไฟล์ · อ่านในเครื่องล้วน ไม่มีการอัปโหลดไปไหน
+      ถ้ามี .lyr และ .cur ชุดเดียวกัน (ไฟล์คาราโอเกะ NCN) ลากมาพร้อมกันได้เลย จะได้เนื้อร้องวิ่งตามและคีย์จากไฟล์ · อ่านในเครื่องล้วน ไม่มีการอัปโหลดไปไหน
     </div>
-    <input type="file" id="file" accept=".mid,.midi,.kar,audio/midi" hidden>
+    <input type="file" id="file" accept=".mid,.midi,.kar,.lyr,.cur,audio/midi" multiple hidden>
     <div class="msg" id="msg"></div>
   </section>
 
@@ -252,6 +273,15 @@ details[open] summary{margin-bottom:12px}
       <button class="btn ghost sm" id="loopClr" disabled>ล้าง</button>
       <span class="meta" id="loopInfo">กด 🔁 เพื่อวนทั้งเพลง หรือตั้งช่วงที่อยากซ้อมซ้ำ</span>
     </div>
+  </section>
+
+  <section class="panel wide" id="lyrPanel" hidden>
+    <div class="panel-head">
+      <h2>เนื้อร้อง</h2>
+      <span class="meta" id="lyrMeta"></span>
+    </div>
+    <div class="lyr" id="lyrBox"></div>
+    <p class="hint" id="lyrHint">คลิกบรรทัดเพื่อกระโดดไปท่อนนั้น · ปุ่ม ⟲ ท้ายบรรทัดวนเฉพาะท่อนนั้น · ตัวอักษรเปลี่ยนเป็นสีทองตามเวลาร้อง</p>
   </section>
 
   <section class="panel wide">
@@ -332,7 +362,8 @@ details[open] summary{margin-bottom:12px}
           <h3>หาไฟล์ MIDI จากไหน</h3>
           <ul>
             <li>ไฟล์คาราโอเกะ <b>.mid / .kar</b> ของเพลงไทยมีแจกทั่วไป ทำนองร้องมักอยู่แทร็กที่ชื่อ Melody หรือช่อง 4</li>
-            <li>ไฟล์ที่เข้ารหัสไว้ (เช่น .emk .ncn) เปิดไม่ได้ ต้องแปลงเป็น .mid ก่อน</li>
+            <li>ชุด <b>NCN</b> มี 3 ไฟล์ชื่อเดียวกัน: .mid (โน้ต) .lyr (ชื่อเพลง ศิลปิน คีย์ เนื้อร้อง) .cur (เวลาของตัวอักษรแต่ละตัว) ลากมาพร้อมกันได้</li>
+            <li>ไฟล์ที่เข้ารหัสไว้ (เช่น .emk) เปิดไม่ได้ ต้องแปลงเป็น .mid ก่อน</li>
             <li>หน้านี้อ่านไฟล์ในเครื่องล้วน ไม่มีการส่งออกไปไหน</li>
           </ul>
         </div>
@@ -723,12 +754,156 @@ function playClick(ctx, dest, t0, strong){
   o.connect(g); g.connect(dest); o.start(t0); o.stop(t0+.08);
 }
 
+/* ══════════ 4½. ไฟล์ .lyr / .cur ของชุด NCN ══════════ */
+// .lyr เป็น TIS-620: บรรทัด 1 ชื่อเพลง 2 ศิลปิน 3 คีย์ 4 ว่าง ที่เหลือคือเนื้อร้อง
+// .cur เป็น uint16 LE หนึ่งค่าต่อหนึ่งตัวอักษรของเนื้อร้อง รวมตัวขึ้นบรรทัด หน่วย 1/24 จังหวะ
+function decodeThai(ab){
+  const u8 = new Uint8Array(ab);
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(u8); }catch(e){}   // ไฟล์ใหม่บางชุดเป็น UTF-8
+  let out = '';
+  for(let i=0;i<u8.length;i++){
+    const b = u8[i];
+    out += b < 0x80 ? String.fromCharCode(b) : b >= 0xA1 && b <= 0xFB ? String.fromCharCode(0x0E00 + b - 0xA0) : b === 0xA0 ? ' ' : '';
+  }
+  return out;
+}
+function parseLyr(text){
+  const L = text.replace(/^\ufeff/,'').split(/\r\n|\n|\r/);
+  const body = L.slice(4);
+  while(body.length && !body[body.length-1].trim()) body.pop();
+  return {title:(L[0]||'').trim(), artist:(L[1]||'').trim(), keyText:(L[2]||'').trim(), key:parseKeyText(L[2]||''), body};
+}
+function parseKeyText(t){
+  const m = /^\s*([A-Ga-g])\s*([#♯]|[b♭])?\s*(m(?:in(?:or)?)?)?\b/.exec(t);
+  if(!m) return null;
+  let root = {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1].toUpperCase()];
+  if(m[2] === '#' || m[2] === '♯') root = (root+1)%12;
+  if(m[2] === 'b' || m[2] === '♭') root = (root+11)%12;
+  const minor = !!m[3];
+  return {root, minor, maj: minor ? (root+3)%12 : root};
+}
+function parseCur(ab){
+  const dv = new DataView(ab), n = dv.byteLength >> 1, out = new Array(n);
+  for(let i=0;i<n;i++) out[i] = dv.getUint16(i*2, true);
+  return out;
+}
+
+// สร้างเส้นเวลาเนื้อร้อง ต้องมีทั้ง .mid (เอา ppq กับ tempo) และ .lyr ก่อน .cur ไม่มีก็แสดงเนื้อร้องเฉย ๆ
+function buildLyric(){
+  lyric = null; hlIdx = 0; hlLine = -1;
+  const panel = $('#lyrPanel');
+  if(!lyr){ panel.hidden = true; return; }
+  const unit = mid ? mid.ppq/24 : 0;
+  const lines = [], flat = [];
+  let ci = 0, timed = 0, totalCh = 0;
+  for(const text of lyr.body){
+    const chars = [];
+    for(const ch of text){
+      let t = null;
+      if(mid && curVals && ci < curVals.length){ t = tickToSec(tmap, mid.ppq, curVals[ci]*unit); timed++; }
+      ci++; totalCh++;
+      chars.push({ch, t});
+    }
+    ci++;                                                   // ตัวขึ้นบรรทัดกินหนึ่งค่า
+    const first = chars.find(c => c.t !== null);
+    const lastT = chars.reduce((m,c) => c.t !== null ? Math.max(m,c.t) : m, -1);
+    lines.push({text, chars, t0: first ? first.t : null, t1: lastT >= 0 ? lastT : null});
+  }
+  lyric = {lines, flat};
+  drawLyric();
+  panel.hidden = false;
+  const bits = [];
+  if(lyr.title) bits.push(lyr.title + (lyr.artist ? ' — ' + lyr.artist : ''));
+  bits.push(lyr.key ? 'คีย์จากไฟล์ ' + lyr.keyText : 'ไฟล์ไม่ระบุคีย์');
+  if(!curVals) bits.push('ไม่มี .cur จึงไม่วิ่งตาม');
+  else if(!mid) bits.push('รอไฟล์ .mid เพื่อคิดเวลา');
+  else bits.push('จับเวลาได้ ' + timed + '/' + totalCh + ' ตัวอักษร');
+  $('#lyrMeta').textContent = bits.join(' · ');
+}
+
+function drawLyric(){
+  const box = $('#lyrBox');
+  box.innerHTML = '';
+  lyric.flat.length = 0;
+  lyric.lines.forEach((ln, li) => {
+    const row = document.createElement('div');
+    row.className = 'ln' + (ln.t0 === null ? ' notime' : '');
+    const tx = document.createElement('span'); tx.className = 'tx';
+    for(const c of ln.chars){
+      const sp = document.createElement('span'); sp.className = 'ch'; sp.textContent = c.ch;
+      tx.appendChild(sp);
+      if(c.t !== null) lyric.flat.push({t:c.t, el:sp, line:li});
+    }
+    row.appendChild(tx);
+    ln.el = row;
+    if(ln.t0 !== null){
+      row.title = 'กระโดดไปท่อนนี้ (' + fmt(ln.t0) + ')';
+      row.addEventListener('click', () => jumpTo(Math.max(0, ln.t0 - .5)));
+      const b = document.createElement('button');
+      b.className = 'lp'; b.textContent = '⟲'; b.title = 'วนเฉพาะท่อนนี้';
+      b.addEventListener('click', e => { e.stopPropagation(); loopLine(li); });
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  });
+  lyric.flat.sort((a,b) => a.t-b.t);
+}
+
+function jumpTo(to){
+  if(playing) startAt(to, false);
+  else { pos = to; paused = to > 0; setButtons(); drawPos(); }
+}
+function loopLine(li){
+  const ln = lyric.lines[li];
+  if(ln.t0 === null) return;
+  let end = null;
+  for(let j=li+1;j<lyric.lines.length;j++) if(lyric.lines[j].t0 !== null){ end = lyric.lines[j].t0; break; }
+  loopA = Math.max(0, ln.t0 - .5);
+  loopB = Math.min(total, end !== null ? end - .05 : (ln.t1 !== null ? ln.t1 + 1 : total));
+  loopOn = true;
+  setButtons(); drawLoop();
+  jumpTo(loopA);
+}
+
+// ไฮไลต์ตามเวลา — เปลี่ยนเฉพาะตัวที่สถานะเปลี่ยน จะได้ไม่วนทั้งเพลงทุกเฟรม
+function drawLyricPos(cur){
+  if(!lyric) return;
+  const F = lyric.flat;
+  let lo = 0, hi = F.length;
+  while(lo < hi){ const m = (lo+hi)>>1; if(F[m].t <= cur) lo = m+1; else hi = m; }
+  if(lo > hlIdx) for(let i=hlIdx;i<lo;i++) F[i].el.className = 'ch on';
+  else if(lo < hlIdx) for(let i=lo;i<hlIdx;i++) F[i].el.className = 'ch';
+  hlIdx = lo;
+  const line = lo > 0 ? F[lo-1].line : -1;
+  if(line !== hlLine){
+    lyric.lines.forEach((ln, i) => {
+      const base = 'ln' + (ln.t0 === null ? ' notime' : '');
+      ln.el.className = base + (i === line ? ' now' : (ln.t1 !== null && ln.t1 < cur ? ' done' : ''));
+    });
+    hlLine = line;
+    const el = line >= 0 ? lyric.lines[line].el : null, box = $('#lyrBox');
+    if(el && typeof el.offsetTop === 'number' && typeof box.clientHeight === 'number')
+      box.scrollTop = Math.max(0, el.offsetTop - box.offsetTop - box.clientHeight/2 + 14);
+  }
+}
+
+function applyLyrKey(){
+  if(!lyr || !lyr.key) return;
+  $('#key').value = String(lyr.key.maj);
+  $('#keyAuto').textContent = 'จากไฟล์ .lyr: ' + lyr.keyText;
+  $('#keyNote').textContent = lyr.key.minor
+    ? 'ไฟล์ระบุคีย์ ' + lyr.keyText + ' (ไมเนอร์) เทียบเป็น ' + KEYNAME[lyr.key.maj] + ' เมเจอร์ เสียงหลักจะไปตกที่ ล ตามธรรมเนียมไทย'
+    : 'อ่านจากบรรทัดคีย์ในไฟล์ .lyr แม่นกว่าที่ระบบเดาเอง';
+  drawKey();
+}
+
 /* ══════════ 5. ตัวเล่น ══════════ */
 let ac = null, graph = null;
 let mid = null, tmap = null, parts = [], melody = -1, events = [], total = 0, sig = null;
 let playing = false, paused = false, pos = 0;
 let anchorReal = 0, anchorSong = 0, rate = 1, evIdx = 0, pTimer = 0, rafId = 0;
 let loopOn = false, loopA = null, loopB = null;
+let lyr = null, curVals = null, lyric = null, hlIdx = 0, hlLine = -1;
 
 const ensureCtx = () => (ac = ac || new (window.AudioContext||window.webkitAudioContext)());
 
@@ -924,6 +1099,7 @@ function drawPos(){
   $('#tNow').textContent = fmt(cur);
   $('#tTot').textContent = fmt(total);
   $('#posMeta').textContent = mid ? Math.round(tempoAt(tmap, cur)*rate) + ' BPM' : '';
+  drawLyricPos(cur);
 }
 function drawLoop(){
   const el = $('#loopInfo');
@@ -1017,6 +1193,7 @@ function loadBuffer(ab, fname){
   $('#fileMeta').textContent =
     fname + ' · format ' + mid.format + ' · ' + parts.length + ' ส่วน · ' + bpm + ' BPM' +
     (sig ? ' · ' + sig.num + '/' + sig.den : '') + ' · ' + fmt(total);
+  buildLyric(); applyLyrKey();
 
   $('#trkTbl').hidden = !parts.length; $('#trkEmpty').hidden = !!parts.length; $('#trkHint').hidden = !parts.length;
   drawTracks(); drawKey(); drawLoop(); setButtons(); drawPos();
@@ -1039,16 +1216,42 @@ function init(){
   ['dragenter','dragover'].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.add('over'); }));
   ['dragleave','drop'].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.remove('over'); }));
   dropEl.addEventListener('drop', e => {
-    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if(f) readFile(f);
+    const fl = e.dataTransfer && e.dataTransfer.files;
+    if(fl && fl.length) handleFiles(fl);
   });
-  fileEl.addEventListener('change', () => { if(fileEl.files[0]) readFile(fileEl.files[0]); });
-  function readFile(f){
+  fileEl.addEventListener('change', () => { if(fileEl.files.length) handleFiles(fileEl.files); fileEl.value = ''; });
+
+  // รับได้ทีละหลายไฟล์: .mid อ่านก่อน .lyr กับ .cur ผูกเข้ากับเพลงที่เปิดอยู่
+  // ถ้าชุดใหม่มี .mid แต่ไม่มี .lyr เนื้อร้องเก่าถูกล้าง จะได้ไม่วิ่งผิดเพลง
+  function handleFiles(list){
     clearMsg();
-    const r = new FileReader();
-    r.onload = () => loadBuffer(r.result, f.name);
-    r.onerror = () => msg('อ่านไฟล์ไม่สำเร็จ', 'err');
-    r.readAsArrayBuffer(f);
+    const files = Array.from(list);
+    const ext = f => (f.name.match(/\.([^.]+)$/) || ['',''])[1].toLowerCase();
+    const kind = f => ({mid:'mid', midi:'mid', kar:'mid', lyr:'lyr', cur:'cur'})[ext(f)] || '';
+    const order = {mid:0, lyr:1, cur:2};
+    const known = files.filter(f => kind(f)).sort((a,b) => order[kind(a)] - order[kind(b)]);
+    if(!known.length){ msg('ไม่รู้จักไฟล์นี้ — รับ .mid .kar .lyr .cur', 'err'); return; }
+    if(known.some(f => kind(f) === 'mid')){
+      if(!known.some(f => kind(f) === 'lyr')) lyr = null;
+      if(!known.some(f => kind(f) === 'cur')) curVals = null;
+    }
+    for(const f of known){
+      const r = new FileReader();
+      r.onload = () => {
+        const k = kind(f);
+        if(k === 'mid') loadBuffer(r.result, f.name);
+        else{
+          try{
+            if(k === 'lyr') lyr = parseLyr(decodeThai(r.result));
+            else curVals = parseCur(r.result);
+          }catch(e){ msg('อ่าน ' + f.name + ' ไม่ได้ — ' + e.message, 'err'); return; }
+          buildLyric(); applyLyrKey();
+          if(lyric && mid) drawPos();
+        }
+      };
+      r.onerror = () => msg('อ่านไฟล์ ' + f.name + ' ไม่สำเร็จ', 'err');
+      r.readAsArrayBuffer(f);
+    }
   }
 
   $('#play').addEventListener('click', playPressed);

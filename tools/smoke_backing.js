@@ -234,6 +234,47 @@ if (!/เปิดไฟล์ไม่ได้/.test(el('msg').textContent)) d
 if (!el('play').disabled) die('ไฟล์เสียแล้วปุ่มเล่นต้องถูกปิด');
 ok('ไฟล์เสียแจ้งเตือนและปิดปุ่ม');
 
+// ---- ชุด NCN: .mid + .lyr + .cur พร้อมกัน ----
+const tis = str => Uint8Array.from([...str].map(c => { const k = c.charCodeAt(0); return k < 0x80 ? k : 0xA0 + (k - 0x0E00); }));
+const LYR_BUF = tis(['ทดสอบ', 'ศิลปิน', 'Am', '', 'ลาลา ลา', 'ทดสอบ'].join('\r\n')).buffer;
+// หนึ่งค่าต่อตัวอักษร รวมตัวขึ้นบรรทัด หน่วย 1/24 จังหวะ — บรรทัดแรก 7 ตัว + ขึ้นบรรทัด, บรรทัดสอง 5 + 1
+const CUR_VALS = [24, 24, 48, 48, 72, 96, 96, 120, 144, 144, 168, 168, 192, 216];
+const CUR_BUF = Uint8Array.from(CUR_VALS.flatMap(v => [v & 255, v >> 8])).buffer;
+made.length = 0;
+try {
+  el('file').files = [{ name: 'song.CUR', _buf: CUR_BUF }, { name: 'song.LYR', _buf: LYR_BUF }, { name: 'song.MID', _buf: MIDI_BUF }];
+  el('file').fire('change');
+} catch (e) { die('พังตอนอ่านชุด NCN', e); }
+if (el('lyrPanel').hidden) die('มี .lyr แล้วแผงเนื้อร้องต้องโผล่');
+if (el('key').value !== '0') die('คีย์จาก .lyr = Am ต้องตั้งเป็น C เมเจอร์ (0) ได้ ' + el('key').value);
+if (!/Am/.test(el('keyAuto').textContent)) die('ป้ายคีย์ต้องบอกว่ามาจากไฟล์ .lyr: ' + el('keyAuto').textContent);
+if (!/จับเวลาได้ 12\/12/.test(el('lyrMeta').textContent)) die('ต้องจับเวลาได้ครบ 12 ตัวอักษร: ' + el('lyrMeta').textContent);
+const lns = el('lyrBox').children;                     // สร้างใหม่ทุกครั้งที่ไฟล์ใดไฟล์หนึ่งมาถึง ดูเฉพาะชุดล่าสุด
+if (lns.length !== 2) die('เนื้อร้องต้องมี 2 บรรทัด ได้ ' + lns.length);
+ok('ชุด NCN — อ่าน TIS-620 · คีย์ Am → C เมเจอร์ · จับเวลาครบ · 2 บรรทัด');
+
+lns[1].fire('click');                                  // บรรทัดสองเริ่มที่ 144/24 = 6 จังหวะ = 3.6 วิ ถอยให้ .5
+if (el('tNow').textContent !== '0:03') die('คลิกบรรทัดสองต้องกระโดดไป 0:03 ได้ ' + el('tNow').textContent);
+el('seek').value = '1000'; el('seek').fire('input'); el('seek').fire('change');
+const onCh = made.filter(e => e.tag === 'span' && e.className === 'ch on').length;
+if (onCh !== 12) die('เลื่อนไปท้ายเพลงแล้วตัวอักษรต้องติดสีทองครบ 12 ได้ ' + onCh);
+el('seek').value = '0'; el('seek').fire('input'); el('seek').fire('change');
+if (made.filter(e => e.tag === 'span' && e.className === 'ch on').length !== 0) die('กลับต้นเพลงแล้วสีทองต้องหาย');
+lns[1].children[1].fire('click', { stopPropagation() { } });
+if (!/วน 0:03 – 0:05/.test(el('loopInfo').textContent)) die('วนบรรทัดสองต้องได้ 0:03 – 0:05 (ตัวสุดท้าย 192/24 = 8 จังหวะ + 1 วิ): ' + el('loopInfo').textContent);
+el('countIn').checked = false;
+el('play').fire('click');
+try { for (let i = 0; i < 300 && timers.size; i++) drainOne(); } catch (e) { die('พังตอนเล่นพร้อมเนื้อร้อง', e); }
+if (!el('play').disabled) die('วนท่อนอยู่ต้องยังเล่นต่อ');
+el('stop').fire('click');
+ok('คลิกบรรทัดกระโดด · ไฮไลต์ตามตำแหน่ง · วนเฉพาะท่อน · เล่นพร้อมเนื้อร้องไม่พัง');
+
+// .mid ใหม่โดยไม่มี .lyr ต้องล้างเนื้อร้องเก่า
+el('file').files = [{ name: 'other.mid', _buf: MIDI_BUF }];
+el('file').fire('change');
+if (!el('lyrPanel').hidden) die('เปิด .mid ใหม่โดยไม่มี .lyr ต้องล้างเนื้อร้อง');
+ok('เปิด .mid ใหม่แล้วเนื้อร้องเก่าถูกล้าง');
+
 console.log('  ผ่านทั้งหมด — ' + name);
 
 function drainOne() {
