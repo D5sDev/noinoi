@@ -8,7 +8,7 @@
 | [หน้าแรก](https://d5sdev.github.io/noinoi/) | อธิบายภาพรวมและวิธีเขียนโน้ตย่อ ๆ |
 | [โน้ตไทย](https://d5sdev.github.io/noinoi/thai.html) | เครื่องดนตรีสังเคราะห์ 6 ชนิด |
 | [ขลุ่ย](https://d5sdev.github.io/noinoi/khlui.html) | เสียงขลุ่ยอัดจริง ลูกสะบัด เสียงควง |
-| [แกะโน้ต](https://d5sdev.github.io/noinoi/listen.html) | แปลงไฟล์ MIDI เป็นโน้ตไทย |
+| [แกะโน้ต](https://d5sdev.github.io/noinoi/listen.html) | แปลงไฟล์ MIDI เป็นโน้ตไทย — ยังไม่ลิงก์จากเมนู เข้าผ่าน URL ตรง |
 
 ---
 
@@ -132,6 +132,7 @@ index.html     หน้าแรก — หน้าเดียวจบ ไ�
 thai.html      หน้าโน้ตไทย — แก้ไฟล์นี้โดยตรง เป็นต้นทาง
 khlui.html     หน้าขลุ่ย — สร้างจาก thai.html อย่าแก้มือ
 listen.html    หน้าแกะโน้ต — ไฟล์อิสระ ไม่เกี่ยวกับสองหน้าข้างบน
+               ตอนนี้ซ่อนจากเมนูไว้ จะเอากลับให้เติมแท็บใน nav ของ thai.html กับการ์ดใน index.html
 tools/         สคริปต์สร้างและทดสอบ (ดู tools/README.md)
 samples/       ไฟล์เสียงขลุ่ยที่สกัดแล้ว + ค่าความถี่และจุด loop
 raw/           ไฟล์อัดต้นฉบับ
