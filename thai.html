@@ -162,6 +162,12 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
   font-size:10.5px;color:var(--gold-dim);padding-right:3px;letter-spacing:.5px;
 }
 .cell .foot .chap{color:var(--red)}
+/* เนื้อร้อง — width:0 กับ min-width:100% ทำให้ไม่ดันห้องให้กว้างขึ้น ยาวเกินก็ตัดขึ้นบรรทัดใหม่ */
+.cell .lyr{
+  width:0;min-width:100%;min-height:1.45em;padding:0 2px;
+  font-size:14px;line-height:1.45;text-align:center;color:#d8cbb6;overflow-wrap:anywhere;
+}
+.cell:has(.slot.on) .lyr{color:var(--gold)}
 .empty{color:var(--dim);font-size:13.5px;padding:14px 2px}
 
 /* help */
@@ -239,6 +245,7 @@ details[open] summary{margin-bottom:12px}
 
   /* ช่องโน้ตเล็กลงหน่อย จะได้ลงบรรทัดละหลายห้อง */
   .slot{width:30px;height:34px;font-size:17px}
+  .cell .lyr{font-size:13px}
   .cells{gap:5px}
   .linenum{flex-basis:20px;font-size:11px}
   .line{scroll-margin-top:66px}      /* เผื่อความสูงของหัวเรื่องที่หนึบอยู่ */
@@ -292,7 +299,7 @@ details[open] summary{margin-bottom:12px}
       <span class="subhint" id="lsNote"></span>
     </div>
     <div class="keys" id="keys"></div>
-    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
+    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป · บรรทัดขึ้นต้นด้วย " = เนื้อร้อง<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
   </section>
 
   <section class="panel">
@@ -426,7 +433,9 @@ details[open] summary{margin-bottom:12px}
             <li><code>-</code> ยืดเสียงตัวก่อนหน้าออกไป</li>
             <li><code>0</code> หยุดเสียง (ตัดเสียงที่ค้างอยู่)</li>
             <li><code>//</code> หรือ <code>#</code> ท้ายบรรทัด = คำอธิบาย ไม่ถูกเล่น</li>
+            <li><code>"</code> ขึ้นต้นบรรทัด = <b>เนื้อร้อง</b>ของบรรทัดโน้ตข้างบน คำละห้องตามเว้นวรรค ห้องที่ไม่มีเนื้อใส่ <code>-</code> มีหลายท่อนก็ใส่หลายบรรทัด</li>
           </ul>
+          <p class="note">ตัวอย่าง<br><code>ดรมฟ ซลทดํ ดํทลซ ฟมรด</code><br><code>" ลมพัด - เย็นฉ่ำ ใจ</code></p>
         </div>
         <div>
           <h3>การจัดห้องและบรรทัด</h3>
@@ -489,11 +498,29 @@ function tokenizeCell(str){
   return out;
 }
 
+// บรรทัดเนื้อร้องขึ้นต้นด้วย " (iOS อาจเปลี่ยนเป็น “ ให้เอง) — เป็นเนื้อของบรรทัดโน้ตข้างบน
+const LYR = /^\s*["“”]/;
+const lyricText = body => body.replace(LYR,'').replace(/["“”]\s*$/,'');
+
+// แบ่งเนื้อร้องให้ห้องละคำตามเว้นวรรค - = ห้องที่ไม่มีเนื้อ
+// คำที่เกินจำนวนห้องไปต่อท้ายห้องสุดท้าย ไม่ให้หายไปเงียบ ๆ
+function addLyrics(cells, text){
+  const w = text.split(/[\s|]+/).filter(Boolean);
+  cells.forEach((c,i)=>{
+    const t = i < cells.length-1 ? (w[i]||'') : w.slice(i).join(' ');
+    (c.lyr || (c.lyr=[])).push(/^[-–—]+$/.test(t) ? '' : t);
+  });
+}
+
 function parseScore(text){
   const lines=[];
   for(const raw of text.split(/\r?\n/)){
     const body = raw.split('//')[0].split('#')[0].trim();
     if(!body) continue;
+    if(LYR.test(body)){
+      if(lines.length) addLyrics(lines[lines.length-1], lyricText(body));
+      continue;
+    }
     const cells = body.split(/[\s|]+/).filter(Boolean)
       .map(tok => ({raw:tok, syms:tokenizeCell(tok)}))
       .filter(c => c.syms.length);
@@ -813,7 +840,12 @@ function render(){
         foot.innerHTML = ks.includes('chap')  ? '<span class="chap">ฉับ</span>'
                        : ks.includes('ching') ? 'ฉิ่ง' : '';
       }
-      c.appendChild(slots); c.appendChild(foot); wrap.appendChild(c);
+      c.appendChild(slots);
+      for(const t of cell.lyr||[]){
+        const l=document.createElement('div'); l.className='lyr'; l.textContent=t;
+        c.appendChild(l);
+      }
+      c.appendChild(foot); wrap.appendChild(c);
       ci++;
     });
     line.appendChild(num); line.appendChild(wrap); scoreEl.appendChild(line);
@@ -853,6 +885,7 @@ function transposeText(text, k){
   if(!k) return text;
   const out = [];
   for(const raw of text.split('\n')){
+    if(LYR.test(raw)){ out.push(raw); continue; }   // เนื้อร้องไม่ใช่โน้ต
     let cut = raw.length;
     const a = raw.indexOf('//'), b = raw.indexOf('#');
     if(a >= 0) cut = Math.min(cut, a);
@@ -913,28 +946,51 @@ function tidy(){
   const per = Math.max(1, Math.min(16, +$('#perLine').value || 8));
   const src = srcEl.value.split(/\r?\n/);
   const cells=[], notes=[];          // notes[li] = คำอธิบายท้ายบรรทัดเดิม
+  const head=[];                     // เนื้อร้องที่ไม่มีบรรทัดโน้ตอยู่ข้างบน — เก็บไว้หัวไฟล์
+  let prev=null;                     // ห้องของบรรทัดโน้ตล่าสุด ให้เนื้อร้องเกาะ
   src.forEach((line,li)=>{
     const m = line.match(/(?:\/\/|#)(.*)$/);
     notes[li] = m ? '// '+m[1].trim() : '';
     const body = line.split('//')[0].split('#')[0].trim();
+    if(LYR.test(body)){
+      if(!prev){ head.push(line.trim()); notes[li]=''; return; }
+      addLyrics(prev, lyricText(body));
+      const k = prev[0].src;         // คำอธิบายท้ายบรรทัดเนื้อ ย้ายไปอยู่กับบรรทัดโน้ตของมัน
+      if(notes[li]){ notes[k] = notes[k] ? notes[k]+' '+notes[li] : notes[li]; notes[li]=''; }
+      return;
+    }
+    const mine=[];
     for(const tok of body.split(/[\s|]+/).filter(Boolean)){
       const syms = tokenizeCell(tok);
-      if(syms.length) cells.push({txt:cellText(syms), src:li});
+      if(syms.length){ const c={txt:cellText(syms), src:li}; cells.push(c); mine.push(c); }
     }
+    if(mine.length) prev=mine;
   });
   if(!cells.length) return;
 
   const lastOf = {};                 // ห้องสุดท้ายของแต่ละบรรทัดเดิมไปอยู่ลำดับที่เท่าไร
   cells.forEach((c,i)=>{ lastOf[c.src]=i; });
 
-  const out=[];
+  const out=[...head];
   for(let i=0;i<cells.length;i+=per){
-    let line = cells.slice(i,i+per).map(c=>c.txt).join(' ');
+    const part = cells.slice(i,i+per);
+    let line = part.map(c=>c.txt).join(' ');
     const cm = Object.keys(lastOf)
       .filter(k => lastOf[k]>=i && lastOf[k]<i+per && notes[k])
       .map(k => notes[k]);
     if(cm.length) line += '   ' + cm.join(' ');
     out.push(line);
+    // เนื้อร้องตามห้องของมันลงมา ห้องว่างเป็น - ตัดที่ว่างท้ายบรรทัดทิ้ง
+    // บรรทัดเนื้อที่ว่างทั้งบรรทัดตัดได้เฉพาะท้าย ไม่งั้นเนื้อท่อนที่ 2 จะเลื่อนขึ้นไปเป็นท่อนแรก
+    const rows = Math.max(0, ...part.map(c => c.lyr ? c.lyr.length : 0));
+    const lyr = [];
+    for(let r=0;r<rows;r++){
+      const w = part.map(c => (c.lyr && c.lyr[r]) || '-');
+      while(w.length && w[w.length-1]==='-') w.pop();
+      lyr.push(w);
+    }
+    while(lyr.length && !lyr[lyr.length-1].length) lyr.pop();
+    for(const w of lyr) out.push('" ' + (w.length ? w.join(' ') : '-'));
   }
   // บรรทัดที่มีแต่คำอธิบาย ไม่มีโน้ต — เก็บไว้ท้ายไฟล์ ไม่ให้หาย
   const orphan = notes.filter((c,li)=> c && lastOf[li]===undefined);
@@ -976,6 +1032,15 @@ function insert(txt){
     b.onclick=()=>insert(k[1]);
     row.appendChild(b);
   });
+  // เนื้อร้องต้องอยู่บรรทัดของตัวเอง — ขึ้นบรรทัดใหม่ต่อท้ายบรรทัดที่เคอร์เซอร์อยู่
+  const lyr=document.createElement('button'); lyr.className='key util'; lyr.textContent='" เนื้อร้อง';
+  lyr.title='เพิ่มบรรทัดเนื้อร้องใต้บรรทัดโน้ตนี้ — คำละห้อง เว้นวรรคแบ่งห้อง';
+  lyr.onclick=()=>{
+    const el=srcEl; let e=el.value.indexOf('\n', el.selectionEnd);
+    if(e<0) e=el.value.length;
+    el.selectionStart=el.selectionEnd=e; insert('\n" ');
+  };
+  row.appendChild(lyr);
   const del=document.createElement('button'); del.className='key util'; del.textContent='⌫ ลบ';
   del.onclick=()=>{
     const el=srcEl, s=el.selectionStart, e=el.selectionEnd;

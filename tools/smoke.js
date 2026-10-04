@@ -194,6 +194,33 @@ Promise.resolve(btn('play').onclick()).then(() => {
     ok('ขยับคีย์โน้ต ▲▼ — ขึ้นแล้วลงได้เดิมคืนครบ');
   }
 
+  // เนื้อร้อง — บรรทัด " ไม่ถูกเล่น ไม่ถูกขยับคีย์ จัดระเบียบแล้วตามห้องของมันไป
+  {
+    const src = cache['#src'], meta = () => doc.querySelector('#meta').textContent;
+    src.value = 'ดรมฟ ซลทดํ ดํทลซ\nฟมรด ด---'; src.fire('input');
+    const plain = meta();
+    doc._slots.length = 0;
+    const withLyr = 'ดรมฟ ซลทดํ ดํทลซ\n" ลมพัด - ดอกไม้\nฟมรด ด---\n“ร่วง”';
+    src.value = withLyr; src.fire('input');
+    if (meta() !== plain) die('เนื้อร้องถูกนับเป็นโน้ต: "' + plain + '" → "' + meta() + '"');
+    const shown = doc._slots.filter(e => e.className === 'lyr').map(e => e.textContent).join('|');
+    if (shown !== 'ลมพัด||ดอกไม้|ร่วง|') die('เนื้อร้องไม่ตรงห้อง: ' + shown);
+    ok('เนื้อร้อง — ไม่ถูกเล่น · แสดงใต้ห้องถูกตัว (' + shown + ')');
+
+    if (btn('trUp')) {
+      btn('trUp').onclick();
+      if (!src.value.includes('" ลมพัด - ดอกไม้')) die('ขยับคีย์แล้วเนื้อร้องเพี้ยน: ' + src.value);
+      btn('trDown').onclick();
+      if (src.value !== withLyr) die('ขยับคีย์ขึ้นลงแล้วโน้ตที่มีเนื้อร้องไม่กลับมาเดิม');
+    }
+    doc.querySelector('#perLine').value = '2';
+    btn('tidy').onclick();
+    const want = 'ดรมฟ ซลทดํ\n" ลมพัด\nดํทลซ ฟมรด\n" ดอกไม้ ร่วง\nด---';
+    if (src.value !== want) die('จัดระเบียบแล้วเนื้อร้องไม่ตามห้อง:\n' + src.value);
+    doc.querySelector('#perLine').value = '8';
+    ok('เนื้อร้อง — ขยับคีย์ไม่โดน · จัดระเบียบแล้วตามห้องไป');
+  }
+
   // จุดเริ่มเล่น + พัก/เล่นต่อ
   const slot = doc._slots && doc._slots.find(e => typeof e.onclick === 'function');
   if (slot) {
