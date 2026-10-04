@@ -43,6 +43,51 @@ const bytes = Uint8Array.from([
 ]);
 const MIDI_BUF = bytes.buffer.slice(0, bytes.length);
 
+/* ---------- ไฟล์คาราโอเกะ: format 0 แทร็กเดียวหลายช่อง + เนื้อร้อง ---------- */
+const TIS = s => [...s].map(c => { const u = c.charCodeAt(0); return u >= 0x0E01 && u <= 0x0E5B ? u - 0x0E00 + 0xA0 : u; });
+// พยางค์ต่อโน้ตตัวที่เท่าไรของ MELODY — ตัวที่ 4 (ซ) ไม่มีคำ ตัวที่ 7 มาก่อนโน้ต 40 tick ตัวที่ 9 อยู่บรรทัดที่สอง
+const SYL = { 0: 'ลม', 1: 'พัด', 2: 'เย็น', 3: 'ฉ่ำ', 5: 'ละ', 6: 'มุน', 7: 'จริง', 9: 'ปลา' };
+const WANT_LYR = 'ด--- ร--- ม--- ฟ--- ซ--- ล--- ท--- ดํ---\n"" ลม พัด เย็น ฉ่ำ _ ละ มุน จริง\n'
+               + 'ท--- ล--- ซ--- ฟ--- ม--- ร--- ด---\n"" _ ปลา';
+
+function karaoke(withLyrics) {
+  const ev = [[0, ...meta(0x03, chars('Song'))], [0, ...meta(0x51, [0x09, 0x27, 0xC0])],
+              [0, 0xC0, 33], [0, 0xC3, 73]];
+  if (withLyrics) ev.push([0, ...meta(0x01, chars('@TSong'))]);
+  MELODY.forEach((p, k) => {
+    ev.push([k * PPQ, 0x93, p, 100], [(k + 1) * PPQ, 0x83, p, 0]);
+    if (withLyrics && SYL[k])
+      ev.push([k * PPQ - (k === 7 ? 40 : 0), ...meta(0x05, TIS((k === 5 ? '/' : '') + SYL[k]))]);
+  });
+  [36, 43, 36, 43].forEach((p, k) => ev.push([k * PPQ * 4, 0x90, p, 90], [(k + 1) * PPQ * 4, 0x80, p, 0]));
+  for (let k = 0; k < 15; k++) ev.push([k * PPQ, 0x99, k % 2 ? 38 : 36, 110], [k * PPQ + PPQ / 2, 0x89, k % 2 ? 38 : 36, 0]);
+  ev.sort((a, b) => a[0] - b[0]);
+  let last = 0;
+  const trk = chunk(ev.map(e => { const d = e[0] - last; last = e[0]; return [d, ...e.slice(1)]; }));
+  const b = Uint8Array.from([...chars('MThd'), ...be32(6), ...be16(0), ...be16(1), ...be16(PPQ), ...trk]);
+  return b.buffer.slice(0, b.length);
+}
+
+// ชุด NCN — เวลาเป็นหน่วย 1/24 จังหวะต่อตัวอักษร ไล่ไปทีละตัวในโน้ตเหมือนเคอร์เซอร์ที่ค่อย ๆ ปาด
+const LYR_LINES = [
+  [['ล', 0], ['ม', 3], ['พ', 24], ['ั', 25], ['ด', 28], [' ', 32], ['เ', 48], ['ย', 49], ['็', 50], ['น', 53],
+   ['ฉ', 72], ['่', 73], ['ำ', 74]],
+  [['ล', 120], ['ะ', 121], ['ม', 144], ['ุ', 145], ['น', 150], ['จ', 166], ['ร', 168], ['ิ', 169], ['ง', 172]],
+  [['ป', 216], ['ล', 217], ['า', 218]],
+];
+const lyrFile = () => {
+  const text = ['ทดสอบ', 'ศิลปิน', 'C', '', ...LYR_LINES.map(l => l.map(c => c[0]).join(''))].join('\r\n');
+  const b = Uint8Array.from(TIS(text));
+  return b.buffer.slice(0, b.length);
+};
+const curFile = () => {
+  const v = [];
+  for (const l of LYR_LINES) { for (const c of l) v.push(c[1]); v.push(l[l.length - 1][1] + 2); }
+  const b = new Uint8Array(v.length * 2);
+  v.forEach((x, i) => { b[i * 2] = x & 255; b[i * 2 + 1] = x >> 8; });
+  return b.buffer;
+};
+
 /* ---------- ค่าเริ่มต้นของ control อ่านจาก HTML จริง ---------- */
 const defs = {};
 for (const m of html.matchAll(/<input[^>]*id="(\w+)"[^>]*>/g)) {
@@ -320,5 +365,49 @@ el('file').fire('change');
 if (el('msg').className.indexOf('err') < 0) die('ไฟล์เสียแล้วไม่ขึ้น error');
 if (!el('play').disabled) die('ไฟล์เสียแล้วปุ่มฟังยังกดได้');
 ok('ไฟล์ที่ไม่ใช่ MIDI — บอก "' + el('msg').textContent + '"');
+
+// ---- คาราโอเกะ format 0 — แยกตามช่อง แล้ววางเนื้อร้องจาก meta 0x05 (TIS-620) ----
+const open = files => { el('file').files = files; el('file').fire('change'); };
+doc._made.length = 0;
+try { open([{ name: 'song.kar', _buf: karaoke(true) }]); } catch (e) { die('พังตอนอ่านไฟล์คาราโอเกะ', e); }
+if (el('msg').className.indexOf('err') >= 0) die('อ่านคาราโอเกะแล้วขึ้น error: ' + el('msg').textContent);
+const krows = doc._made.filter(e => e.innerHTML.startsWith('<td class="num">'));
+if (krows.length !== 3) die('แทร็กเดียว 3 ช่องต้องแยกได้ 3 แถว ได้ ' + krows.length);
+const kon = doc._made.filter(e => e.className && e.className.indexOf('on') === 0);
+if (!kon.length || kon[0].innerHTML.indexOf('ช่อง 4') < 0) die('ควรเลือกช่อง 4 เป็นทำนอง ได้ ' + (kon[0] || {}).innerHTML);
+ok('format 0 — แยก 3 ช่อง (เบส ทำนอง กลอง) เลือกช่อง 4 เป็นทำนอง');
+if (el('out').value !== WANT_LYR)
+  die('เนื้อร้องจาก .kar ไม่ตรง\n    ได้   ' + JSON.stringify(el('out').value) + '\n    ต้องการ ' + JSON.stringify(WANT_LYR));
+if (el('stats').innerHTML.indexOf('เนื้อร้อง <b>8</b>') < 0) die('ควรนับเนื้อร้องได้ 8 พยางค์: ' + el('stats').innerHTML);
+if (el('stats').innerHTML.indexOf('ห่างจากโน้ต') >= 0) die('ไม่ควรมีคำที่ห่างจากโน้ต: ' + el('stats').innerHTML);
+ok('เนื้อร้องใน .kar — ' + el('msg').textContent.split(' · ').pop() + ' · ข้ามโน้ตที่ไม่มีคำเป็น _ · คำมาก่อนโน้ตนิดหน่อยยังลงถูกตัว');
+
+// ---- ชุด NCN .mid + .lyr + .cur ลากมาพร้อมกัน ----
+open([{ name: 'x.mid', _buf: karaoke(false) }, { name: 'x.lyr', _buf: lyrFile() }, { name: 'x.cur', _buf: curFile() }]);
+if (el('out').value !== WANT_LYR)
+  die('เนื้อร้องจาก .lyr/.cur ไม่ตรง\n    ได้   ' + JSON.stringify(el('out').value) + '\n    ต้องการ ' + JSON.stringify(WANT_LYR));
+ok('ชุด NCN .lyr/.cur — รวมสระกับวรรณยุกต์เข้าพยางค์ได้ถูก (เย็น ฉ่ำ จริง) วางตรงโน้ตเหมือน .kar');
+
+// เปลี่ยนกริดแล้วต้องวางใหม่ — 2 ช่อง/ห้อง โน้ตยังครบ คำยังตามโน้ตตัวเดิม
+el('spc').value = '2'; el('spc').fire('change');
+if (el('out').value.split('\n')[1] !== '"" ลม พัด เย็น ฉ่ำ _ ละ มุน จริง') die('เปลี่ยนกริดแล้วเนื้อร้องเลื่อน: ' + el('out').value);
+el('spc').value = '4'; el('spc').fire('change');
+ok('เปลี่ยนช่องต่อห้อง — วางเนื้อร้องใหม่ตามโน้ตเดิม');
+
+// ส่งต่อแล้วหน้าเล่นได้บรรทัด "" ไปด้วย
+el('dest').value = 'thai';
+el('send').fire('click');
+if (JSON.parse(sandbox.localStorage.getItem('noinoi:thai')).notes !== WANT_LYR) die('ส่งต่อแล้วเนื้อร้องไม่ไปด้วย');
+ok('ส่งต่อ — บรรทัดเนื้อร้องไปถึงหน้าเล่นครบ');
+
+// เปิด .mid ใหม่โดยไม่มี .lyr — เนื้อร้องเก่าต้องหาย
+open([{ name: 'y.mid', _buf: karaoke(false) }]);
+if (el('out').value.indexOf('""') >= 0) die('เปิด .mid ใหม่แล้วเนื้อร้องเก่ายังค้าง');
+// ลาก .lyr มาทีหลังโดยไม่มี .cur — บอกว่าขาดไฟล์
+open([{ name: 'y.lyr', _buf: lyrFile() }]);
+if (el('msg').className.indexOf('err') < 0) die('มี .lyr แต่ไม่มี .cur ควรเตือน');
+open([{ name: 'y.cur', _buf: curFile() }]);
+if (el('out').value !== WANT_LYR) die('ลาก .cur ตามมาทีหลังแล้วเนื้อร้องไม่ขึ้น');
+ok('เปิด .mid ใหม่ล้างเนื้อร้องเก่า · ลาก .lyr แล้ว .cur ตามมาทีหลังก็ได้');
 
 console.log('  ✓ ผ่านทั้งหมด');

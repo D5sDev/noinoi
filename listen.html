@@ -242,10 +242,10 @@ details[open] summary{margin-bottom:12px}
     </div>
     <div class="drop" id="drop">
       <div class="ico">🎹</div>
-      <b>ลากไฟล์ .mid มาวางตรงนี้</b>
-      หรือคลิกเพื่อเลือกไฟล์ · อ่านในเครื่องล้วน ไม่มีการอัปโหลดไปไหน
+      <b>ลากไฟล์ .mid หรือ .kar มาวางตรงนี้</b>
+      หรือคลิกเพื่อเลือกไฟล์ · มี .lyr กับ .cur ของชุด NCN ให้ลากมาพร้อมกัน จะได้เนื้อร้องใต้โน้ต · อ่านในเครื่องล้วน ไม่มีการอัปโหลดไปไหน
     </div>
-    <input type="file" id="file" accept=".mid,.midi,audio/midi" hidden>
+    <input type="file" id="file" accept=".mid,.midi,.kar,.lyr,.cur,audio/midi" multiple hidden>
     <div class="msg" id="msg"></div>
   </section>
 
@@ -375,6 +375,15 @@ details[open] summary{margin-bottom:12px}
             <li>เพลงเร็วมากอาจต้องยอมทิ้งตัวประดับบางตัว</li>
           </ul>
         </div>
+        <div>
+          <h3>เนื้อร้อง</h3>
+          <ul>
+            <li>อ่านจาก <b>.lyr + .cur</b> ของชุด NCN หรือเนื้อร้องที่ฝังในไฟล์ <b>.kar</b> แล้ววางแต่ละคำลงโน้ตที่กำลังดังอยู่ตอนนั้น ออกมาเป็นบรรทัด <code>""</code> ใต้บรรทัดโน้ต</li>
+            <li>คำที่ตกโน้ตเดียวกันต่อกันเป็นพยางค์เดียว โน้ตที่ไม่มีคำเป็น <code>_</code></li>
+            <li>สถิติ <b>ห่างจากโน้ต</b> สูงแปลว่าเวลาของเนื้อร้องไม่ตรงกับทำนอง เช่นเลือกแทร็กผิด หรือไฟล์ .cur ชุดนั้นใช้หน่วยเวลาต่างไป</li>
+            <li>เนื้อร้องวางตามโน้ตที่แปลงแล้ว เปลี่ยนกริดหรือแทร็กแล้ววางใหม่ให้เอง</li>
+          </ul>
+        </div>
       </div>
       <p class="note">
         ระบบอ่านไฟล์ในเครื่องล้วน ไม่มีการส่งข้อมูลออกไปไหน · รองรับ MIDI format 0 และ 1
@@ -429,8 +438,9 @@ function decodeText(dv,p,len){
 
 function readTrack(dv, start, end){
   let p = start, tick = 0, running = 0;
-  const notes = [], tempos = [], open = new Map(), chans = new Set();
-  let name = '', program = -1, timeSig = null;
+  const notes = [], tempos = [], open = new Map(), chanProg = {};
+  const lyrics = [], texts = [];                     // meta 0x05 กับ 0x01 — .kar ใช้เก็บเนื้อร้อง
+  let name = '', timeSig = null;
 
   const vlq = () => {
     let v=0, b, n=0;
@@ -453,14 +463,15 @@ function readTrack(dv, start, end){
         tempos.push({tick, us:(dv.getUint8(p)<<16)|(dv.getUint8(p+1)<<8)|dv.getUint8(p+2)});
       else if(type === 0x58 && len >= 2 && !timeSig)
         timeSig = {num:dv.getUint8(p), den:1<<dv.getUint8(p+1)};
+      else if((type === 0x05 || type === 0x01) && len && p+len <= end)
+        (type === 0x05 ? lyrics : texts).push({tick, text:decodeThai(new Uint8Array(dv.buffer, dv.byteOffset+p, len))});
       p += len;
       if(type === 0x2F) break;
     }
     else if(st === 0xF0 || st === 0xF7){ p += vlq(); } // sysex ข้ามไป
     else {
       const cmd = st & 0xF0, ch = st & 0x0F;
-      chans.add(ch);
-      if(cmd === 0xC0){ if(program < 0) program = dv.getUint8(p); p += 1; }
+      if(cmd === 0xC0){ if(chanProg[ch] === undefined) chanProg[ch] = dv.getUint8(p); p += 1; }
       else if(cmd === 0xD0){ p += 1; }
       else if(cmd === 0x90 || cmd === 0x80){
         const pit = dv.getUint8(p), vel = dv.getUint8(p+1); p += 2;
@@ -479,7 +490,18 @@ function readTrack(dv, start, end){
   // โน้ตที่ไม่มี note-off ปิดให้ที่ท้ายแทร็ก
   for(const q of open.values()) for(const n of q){ n.dur = Math.max(1, tick-n.tick); notes.push(n); }
   notes.sort((a,b) => a.tick-b.tick || a.pitch-b.pitch);
-  return {name, program, timeSig, notes, tempos, chans:[...chans].sort((a,b)=>a-b)};
+  return {name, timeSig, notes, tempos, chanProg, lyrics, texts};
+}
+
+// ไฟล์คาราโอเกะไทยส่วนมากเป็น TIS-620 ไม่ใช่ UTF-8 — ลอง UTF-8 แบบเข้มก่อน ไม่ผ่านค่อยอ่านเป็น TIS-620
+function decodeThai(u8){
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(u8); }catch(e){}
+  let out = '';
+  for(let i=0;i<u8.length;i++){
+    const b = u8[i];
+    out += b < 0x80 ? String.fromCharCode(b) : b >= 0xA1 && b <= 0xFB ? String.fromCharCode(0x0E00 + b - 0xA0) : b === 0xA0 ? ' ' : '';
+  }
+  return out;
 }
 
 function parseMidi(ab){
@@ -534,11 +556,29 @@ function tickToSec(map, ppq, tick){
 }
 
 /* ══════════ 3. วิเคราะห์แทร็ก ══════════ */
-function analyse(tr, ppq){
-  const n = tr.notes;
-  const st = {name:tr.name, program:tr.program, chans:tr.chans,
-              drum:tr.chans.includes(9), count:n.length,
-              lo:0, hi:0, mean:0, poly:0, endTick:0};
+// แยกตาม (แทร็ก × ช่อง) — ไฟล์ format 0 กับคาราโอเกะยัดทุกเครื่องไว้แทร็กเดียว แยกแค่แทร็กจะหาทำนองไม่เจอ
+// แทร็กที่ไม่มีโน้ตเลยยังเก็บไว้หนึ่งแถว ให้เห็นว่าไฟล์มีแทร็กอะไรบ้าง
+function buildParts(mid){
+  const parts = [];
+  mid.tracks.forEach((tr, ti) => {
+    const byCh = new Map();
+    for(const n of tr.notes){ if(!byCh.has(n.chan)) byCh.set(n.chan, []); byCh.get(n.chan).push(n); }
+    if(!byCh.size) byCh.set(-1, []);
+    const multi = byCh.size > 1;
+    for(const [ch, notes] of [...byCh.entries()].sort((a,b) => a[0]-b[0])){
+      parts.push(analyse({
+        ti, ch, notes,
+        name: (tr.name || '') + (multi ? (tr.name ? ' · ' : '') + 'ช่อง ' + (ch+1) : ''),
+        program: tr.chanProg[ch] === undefined ? -1 : tr.chanProg[ch],
+      }, mid.ppq));
+    }
+  });
+  return parts;
+}
+
+function analyse(st, ppq){
+  const n = st.notes;
+  Object.assign(st, {drum:st.ch === 9, count:n.length, lo:0, hi:0, mean:0, poly:0, endTick:0});
   if(!n.length) return st;
   const tol = ppq/8;
   let sum=0, lo=127, hi=0, ov=0, end=0;
@@ -561,6 +601,7 @@ function melodyScore(st){
   if(st.program >= 24 && st.program <= 31) s -= 10;   // กีตาร์ มักเล่นคอร์ด
   if(st.mean < 48) s -= 40;
   if(st.count < 8) s -= 60;
+  if(st.ch === 3) s += 25;                            // ไฟล์คาราโอเกะไทยชอบวางทำนองไว้ช่อง 4
   if(/melod|vocal|lead|sing|voice|main|solo|ทำนอง|ร้อง/i.test(st.name)) s += 90;
   if(/bass|drum|perc|chord|pad|string|harmon|เบส|กลอง|ประสาน|คลอ/i.test(st.name)) s -= 60;
   return s;
@@ -615,7 +656,7 @@ function buildGrid(notes, ppq, cfg){
     picked.push({s, e:Math.max(s+1, q(best.tick+best.dur)), pitch:best.pitch});
     i = j;
   }
-  if(!picked.length) return {grid:[], clash:0};
+  if(!picked.length) return {grid:[], clash:0, step, off:0};
 
   const off   = cfg.trim ? picked[0].s : 0;
   const total = Math.max(0, picked[picked.length-1].e - off);
@@ -628,10 +669,10 @@ function buildGrid(notes, ppq, cfg){
     grid[s] = n.pitch;
     for(let x=s+1; x<e && x<grid.length; x++) grid[x] = -1;
   }
-  return {grid, clash};
+  return {grid, clash, step, off};
 }
 
-function toThai(grid, cfg, majRoot){
+function toThai(grid, cfg, majRoot, syl){
   const rootMidi = 60 + majRoot;                    // ตัว ด ที่ช่วงเสียง 4 ของหน้าเล่น
   const octs = [];
   for(const v of grid) if(v > 0) octs.push(Math.floor((v-rootMidi)/12));
@@ -661,8 +702,96 @@ function toThai(grid, cfg, majRoot){
     cells.push(cell);
   }
   const lines = [];
-  for(let i=0;i<cells.length;i+=cfg.perLine) lines.push(cells.slice(i,i+cfg.perLine).join(' '));
+  for(let i=0;i<cells.length;i+=cfg.perLine){
+    lines.push(cells.slice(i,i+cfg.perLine).join(' '));
+    if(!syl) continue;
+    // บรรทัด "" ของหน้าเล่น — หนึ่งพยางค์ต่อหนึ่งโน้ตตามลำดับ _ = โน้ตที่ไม่มีคำ
+    const w = [];
+    for(let x=i*cfg.spc; x<(i+cfg.perLine)*cfg.spc && x<grid.length; x++)
+      if(grid[x] > 0) w.push(syl[x] || '_');
+    while(w.length && w[w.length-1] === '_') w.pop();
+    if(w.length) lines.push('"" ' + w.join(' '));
+  }
   return {text:lines.join('\n'), snap, outside, count, oct, cells:cells.length};
+}
+
+/* ══════════ 5½. เนื้อร้อง ══════════ */
+// สองแหล่ง: .lyr + .cur ของชุด NCN (เวลาต่อตัวอักษร) หรือ meta เนื้อร้องที่ฝังในไฟล์ .kar (เวลาต่อพยางค์)
+// .lyr: บรรทัด 1 ชื่อเพลง 2 ศิลปิน 3 คีย์ 4 ว่าง ที่เหลือคือเนื้อร้อง
+// .cur: uint16 LE หนึ่งค่าต่อหนึ่งตัวอักษร รวมตัวขึ้นบรรทัด หน่วย 1/24 จังหวะ
+function lyrBody(text){
+  const L = text.replace(/^﻿/,'').split(/\r\n|\n|\r/).slice(4);
+  while(L.length && !L[L.length-1].trim()) L.pop();
+  return L;
+}
+function parseCur(ab){
+  const dv = new DataView(ab), out = [];
+  for(let i=0;i+1<dv.byteLength;i+=2) out.push(dv.getUint16(i,true));
+  return out;
+}
+
+// ตัวที่ห้ามแยกจากกัน: สระหน้าเกาะตัวถัดไป ส่วนสระบน-ล่าง วรรณยุกต์ ะ า ำ ๆ ฯ เกาะตัวก่อนหน้า
+const TH_LEAD = /[เ-ไ]/, TH_TAIL = /[ฯะ-ฺๅ-๎]/;
+
+function ncnUnits(body, cur, ppq){
+  const units = [];
+  let ci = 0, untimed = 0;
+  for(const line of body){
+    const start = units.length;
+    let pend = null;
+    for(const ch of line){
+      const tick = ci < cur.length ? cur[ci]*ppq/24 : null;
+      ci++;
+      if(tick === null){ if(ch.trim()) untimed++; continue; }
+      if(!ch.trim()) continue;
+      if(TH_LEAD.test(ch)){ pend = pend ? {tick:pend.tick, text:pend.text+ch} : {tick, text:ch}; continue; }
+      if(TH_TAIL.test(ch) && !pend && units.length > start){ units[units.length-1].text += ch; continue; }
+      units.push({tick, text:(pend ? pend.text : '') + ch});
+      pend = null;
+    }
+    if(pend) units.push(pend);
+    ci++;                                             // ตัวขึ้นบรรทัดกินหนึ่งค่า
+  }
+  return {units, untimed};
+}
+
+// ใช้ meta 0x05 ถ้ามี ไม่มีค่อยใช้ 0x01 ที่ไม่ใช่หัวไฟล์ @ — ต้องมีหลายอัน จะได้ไม่เอาข้อความลิขสิทธิ์มาเป็นเนื้อร้อง
+// เอาแทร็กเดียวที่มีมากที่สุด บางไฟล์ใส่เนื้อร้องซ้ำสองแทร็ก รวมกันแล้วคำจะเบิ้ล
+function karUnits(mid){
+  const most = list => list.reduce((a,b) => b.length > a.length ? b : a, []);
+  let ev = most(mid.tracks.map(t => t.lyrics));
+  if(!ev.length){
+    ev = most(mid.tracks.map(t => t.texts.filter(e => !/^[@%]/.test(e.text))));
+    if(ev.length < 8) ev = [];
+  }
+  return ev.slice().sort((a,b) => a.tick-b.tick);
+}
+
+// ทำให้เป็นพยางค์เดียวที่หน้าเล่นอ่านกลับได้ — ไม่มีเว้นวรรค และไม่มีตัวที่หน้าเล่นใช้เป็นเครื่องหมาย
+const cleanSyl = t => t.replace(/[\s\x00-\x1f"“”|#\/\\]+/g, '').replace(/^[-–—_]+$/, '');
+
+// วางแต่ละคำลงโน้ตที่กำลังดังอยู่ตอนนั้น ยอมให้มาก่อนโน้ตครึ่งช่อง เพราะเคอร์เซอร์คาราโอเกะมักนำนิดหน่อย
+// ตกช่วงเงียบให้เลือกระหว่างโน้ตก่อนหน้ากับโน้ตถัดไปตัวที่ใกล้กว่า คำที่ลงโน้ตเดียวกันต่อกันเป็นพยางค์เดียว
+function placeLyrics(units, g, spc){
+  const grid = g.grid, ons = [];
+  grid.forEach((v,i) => { if(v > 0) ons.push(i); });
+  const syl = {};
+  let far = 0;
+  if(!ons.length) return {syl, far};
+  const endOf = k => { let e = ons[k]+1; while(e < grid.length && grid[e] === -1) e++; return e; };
+  for(const u of units){
+    const text = cleanSyl(u.text);
+    if(!text) continue;
+    const pos = u.tick/g.step - g.off;
+    let lo = 0, hi = ons.length-1, k = 0;
+    while(lo <= hi){ const m = (lo+hi) >> 1; if(ons[m] <= pos+.5){ k = m; lo = m+1; } else hi = m-1; }
+    const e = endOf(k);
+    if(pos >= e && k+1 < ons.length && ons[k+1]-pos < pos-e+1) k++;
+    const ek = endOf(k), d = pos < ons[k] ? ons[k]-pos : pos >= ek ? pos-ek+1 : 0;
+    if(d > spc) far++;                                // ห่างโน้ตเกินหนึ่งห้อง — เวลาของเนื้อร้องน่าจะเพี้ยน
+    syl[ons[k]] = (syl[ons[k]] || '') + text;
+  }
+  return {syl, far};
 }
 
 /* ══════════ 6. เสียงตัวอย่าง ══════════ */
@@ -778,7 +907,7 @@ function pump(){
 
 // ฟังเสียงต้นฉบับของแทร็ก 10 วินาทีแรก ตัดสินว่าใช่ทำนองไหม
 function auditionTrack(ti){
-  const tr = mid && mid.tracks[ti];
+  const tr = mid && stats[ti];
   if(!tr || !tr.notes.length) return;
   stopSound();
   const ctx = ensureCtx();
@@ -800,6 +929,7 @@ function auditionTrack(ti){
 
 /* ══════════ 7. UI ══════════ */
 let mid = null, tmap = null, stats = [], sel = -1, result = null, srcTempo = 120;
+const ncn = {lyr:null, cur:null};      // เนื้อร้องชุด NCN ที่เปิดมาพร้อม .mid
 
 const NOTEVAL = {1:'ตัวกลม',2:'ตัวขาว',4:'ตัวดำ',8:'เขบ็ต 1 ชั้น',16:'เขบ็ต 2 ชั้น',32:'เขบ็ต 3 ชั้น',64:'เขบ็ต 4 ชั้น'};
 
@@ -883,7 +1013,7 @@ function loadBuffer(ab, fname){
     return;
   }
   tmap = tempoMap(mid);
-  stats = mid.tracks.map(t => analyse(t, mid.ppq));
+  stats = buildParts(mid);
 
   // ความเร็วต้นฉบับ กับ จังหวะต่อห้อง ที่ทำให้ค่าอยู่ในช่วงที่หน้าเล่นรับได้
   srcTempo = 60e6/tmap[0].us;
@@ -908,7 +1038,9 @@ function loadBuffer(ab, fname){
     ' · ' + Math.floor(secs/60) + ':' + String(Math.round(secs%60)).padStart(2,'0');
 
   $('#trkTbl').hidden = false; $('#trkEmpty').hidden = true; $('#trkHint').hidden = false;
-  $('#trkMeta').textContent = mid.tracks.length + ' แทร็ก · ระบบเดาให้แล้ว เปลี่ยนได้';
+  $('#trkMeta').textContent = mid.tracks.length + ' แทร็ก'
+    + (stats.length !== mid.tracks.length ? ' แยกตามช่องได้ ' + stats.length + ' ส่วน' : '')
+    + ' · ระบบเดาให้แล้ว เปลี่ยนได้';
   drawTracks();
 
   const warn = [];
@@ -916,9 +1048,13 @@ function loadBuffer(ab, fname){
   if(sig && sig.den === 8 && sig.num % 3 === 0) warn.push('เพลงนี้เป็นจังหวะ ' + sig.num + '/' + sig.den + ' ห้องไทยแบ่งได้แต่ 2 กับ 4 จังหวะจะเพี้ยน');
   if(sig && sig.num === 3) warn.push('เพลงนี้เป็นจังหวะ 3/4 ห้องไทยแบ่งได้แต่ 2 กับ 4 จังหวะจะเพี้ยน');
   if(sel < 0) warn.push('ไม่พบแทร็กที่มีระดับเสียง มีแต่กลองหรือแทร็กว่าง');
+  if(!!ncn.lyr !== !!ncn.cur) warn.push(ncn.lyr ? 'มี .lyr แต่ไม่มี .cur จึงไม่รู้ว่าคำไหนตรงโน้ตไหน'
+                                                : 'มี .cur แต่ไม่มี .lyr จึงไม่มีเนื้อร้องให้วาง');
 
+  const lu = lyricUnits();
   if(warn.length) msg(warn.join(' · '), 'err');
-  else msg('อ่านไฟล์สำเร็จ เลือกแทร็ก “' + (stats[sel].name || 'แทร็ก '+(sel+1)) + '” ให้ก่อน ฟังแล้วเปลี่ยนได้', 'ok');
+  else msg('อ่านไฟล์สำเร็จ เลือกแทร็ก “' + (stats[sel].name || 'แทร็ก '+(sel+1)) + '” ให้ก่อน ฟังแล้วเปลี่ยนได้'
+         + (lu ? ' · พบเนื้อร้อง' + (ncn.lyr ? 'จาก .lyr/.cur' : 'ในไฟล์') + ' วางใต้โน้ตให้แล้ว' : ''), 'ok');
 
   convert(true);
 }
@@ -941,12 +1077,17 @@ function setOut(text, st){
     '<span class="stat'+(st.outside?' warn':'')+'">นอกบันไดเสียง <b>'+st.outside+'</b> ตัว ('+pct+'%)</span>',
     '<span class="stat'+(st.clash?' warn':'')+'">ชนกันในช่อง <b>'+st.clash+'</b> ตัว</span>',
   ];
+  if(st.lyr){
+    parts.push('<span class="stat">เนื้อร้อง <b>'+st.lyr.words+'</b> พยางค์</span>');
+    if(st.lyr.far) parts.push('<span class="stat warn">ห่างจากโน้ต <b>'+st.lyr.far+'</b> คำ</span>');
+    if(st.lyr.untimed) parts.push('<span class="stat warn">ไม่มีเวลา <b>'+st.lyr.untimed+'</b> ตัวอักษร</span>');
+  }
   box.innerHTML = parts.join('');
 }
 
 function convert(auto){
   if(!mid || sel < 0 || !stats[sel] || !stats[sel].count){ result = null; setOut('', null); return; }
-  const notes = mid.tracks[sel].notes.filter(n => n.chan !== 9);
+  const notes = stats[sel].notes.filter(n => n.chan !== 9);
   if(!notes.length){ result = null; setOut('', null); return; }
 
   if(auto){                                   // เดาคีย์ให้ตอนเปลี่ยนแทร็กเท่านั้น ไม่ทับที่ผู้ใช้ตั้งเอง
@@ -960,9 +1101,19 @@ function convert(auto){
 
   const cfg = readCfg();
   const g = buildGrid(notes, mid.ppq, cfg);
-  const t = toThai(g.grid, cfg, cfg.majRoot);
+  const lu = lyricUnits();
+  const pl = lu && placeLyrics(lu.units, g, cfg.spc);
+  const t = toThai(g.grid, cfg, cfg.majRoot, pl && pl.syl);
   result = {snap:t.snap, oct:t.oct};
-  setOut(t.text, {count:t.count, cells:t.cells, oct:t.oct, outside:t.outside, clash:g.clash});
+  setOut(t.text, {count:t.count, cells:t.cells, oct:t.oct, outside:t.outside, clash:g.clash,
+                  lyr: pl && {words:Object.keys(pl.syl).length, far:pl.far, untimed:lu.untimed}});
+}
+
+// เนื้อร้องจาก .lyr + .cur มาก่อน ไม่มีค่อยดูในไฟล์ .kar
+function lyricUnits(){
+  if(ncn.lyr && ncn.cur) return ncnUnits(ncn.lyr, ncn.cur, mid.ppq);
+  const units = karUnits(mid);
+  return units.length ? {units, untimed:0} : null;
 }
 
 function buildSave(){
@@ -1015,18 +1166,36 @@ function init(){
     e.preventDefault(); dropEl.classList.remove('over');
   }));
   dropEl.addEventListener('drop', e => {
-    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if(f) readFile(f);
+    const fs = e.dataTransfer && e.dataTransfer.files;
+    if(fs && fs.length) readFiles(fs);
   });
-  fileEl.addEventListener('change', () => { if(fileEl.files[0]) readFile(fileEl.files[0]); });
+  fileEl.addEventListener('change', () => { if(fileEl.files.length) readFiles(fileEl.files); });
 
-  function readFile(f){
+  // รับหลายไฟล์พร้อมกัน — ชุด NCN มี .mid .lyr .cur ชื่อเดียวกัน นามสกุลอื่นลองอ่านเป็น MIDI ไปเลย
+  function readFiles(list){
     clearMsg();
     stopSound();
-    const r = new FileReader();
-    r.onload = () => loadBuffer(r.result, f.name);
-    r.onerror = () => msg('อ่านไฟล์ไม่สำเร็จ', 'err');
-    r.readAsArrayBuffer(f);
+    const ext  = f => (f.name.split('.').pop() || '').toLowerCase();
+    const kind = f => ({lyr:'lyr', cur:'cur'})[ext(f)] || 'mid';
+    const files = [...list], got = {};
+    let left = files.length;
+    files.forEach(f => {
+      const r = new FileReader();
+      r.onload = () => { got[kind(f)] = {name:f.name, buf:r.result}; if(--left === 0) done(); };
+      r.onerror = () => msg('อ่านไฟล์ ' + f.name + ' ไม่สำเร็จ', 'err');
+      r.readAsArrayBuffer(f);
+    });
+    function done(){
+      const lyr = got.lyr ? lyrBody(decodeThai(new Uint8Array(got.lyr.buf))) : null;
+      const cur = got.cur ? parseCur(got.cur.buf) : null;
+      if(got.mid){ ncn.lyr = lyr; ncn.cur = cur; loadBuffer(got.mid.buf, got.mid.name); return; }
+      if(!mid){ msg('เปิดไฟล์ .mid ก่อน หรือลาก .mid .lyr .cur มาพร้อมกันทั้งชุด', 'err'); return; }
+      if(lyr) ncn.lyr = lyr;
+      if(cur) ncn.cur = cur;
+      convert();
+      msg(ncn.lyr && ncn.cur ? 'ได้เนื้อร้องจาก .lyr/.cur วางใต้โน้ตให้แล้ว'
+                             : 'ได้ไฟล์ .' + (ncn.lyr ? 'lyr' : 'cur') + ' แล้ว ขาดอีกไฟล์ของชุดเดียวกัน', ncn.lyr && ncn.cur ? 'ok' : 'err');
+    }
   }
 
   $('#play').addEventListener('click', startPreview);
