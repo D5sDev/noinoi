@@ -316,7 +316,7 @@ details[open] summary{margin-bottom:12px}
       <span class="subhint" id="lsNote"></span>
     </div>
     <div class="keys" id="keys"></div>
-    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป · บรรทัดขึ้นต้นด้วย " = เนื้อร้องห้องละคำ "" = พยางค์ละโน้ต<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
+    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป · บรรทัดขึ้นต้นด้วย " = เนื้อร้องห้องละคำ (มี | คั่นห้อง = คำลงใต้โน้ตในห้อง) "" = พยางค์ละโน้ต<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
   </section>
 
   <section class="panel">
@@ -442,10 +442,10 @@ details[open] summary{margin-bottom:12px}
             <li><code>0</code> หยุดเสียง (ตัดเสียงที่ค้างอยู่)</li>
             <li><code>//</code> หรือ <code>#</code> ท้ายบรรทัด = คำอธิบาย ไม่ถูกเล่น</li>
             <li><code>"</code> ขึ้นต้นบรรทัด = <b>เนื้อร้อง</b>ของบรรทัดโน้ตข้างบน คำละห้องตามเว้นวรรค ห้องที่ไม่มีเนื้อใส่ <code>-</code> มีหลายท่อนก็ใส่หลายบรรทัด</li>
-            <li>อยากเว้นวรรคในห้อง ให้คั่นห้องด้วย <code>|</code> แทน — บรรทัดเนื้อที่มี <code>|</code> จะแบ่งห้องด้วย <code>|</code> อย่างเดียว</li>
+            <li>บรรทัดเนื้อที่มี <code>|</code> — <code>|</code> คั่นห้อง คำในห้องเดียวกันเว้นวรรคแยก แล้ว<b>ลงใต้โน้ตในห้องนั้นทีละตัว</b> ข้าม <code>-</code> กับ <code>0</code> ให้เอง <code>_</code> = โน้ตที่ไม่มีคำ <code>||</code> = ห้องว่าง คำเกินจำนวนโน้ตไปต่อท้ายโน้ตตัวสุดท้ายของห้อง</li>
             <li><code>""</code> ขึ้นต้นบรรทัด = เนื้อร้อง<b>พยางค์ละโน้ต</b> — คำลงใต้โน้ตทีละตัวตามลำดับ ข้ามช่อง <code>-</code> กับ <code>0</code> ให้เอง เว้นวรรคแยกพยางค์ <code>_</code> = โน้ตที่ไม่มีคำ (เอื้อน)</li>
           </ul>
-          <p class="note">ตัวอย่าง<br><code>---ซ ---ล ---ท ดํ---</code><br><code>" ลม พัด | - | เย็น ฉ่ำ | ใจ</code><br><code>"" ลม พัด เย็น ฉ่ำ</code></p>
+          <p class="note">ตัวอย่าง — สองบรรทัดเนื้อนี้ได้ผลเท่ากัน<br><code>ดรมฟ ซ-ลท ดํ--- ----</code><br><code>" ลม พัด เย็น ฉ่ำ | ใจ _ ละ | ไกล</code><br><code>"" ลม พัด เย็น ฉ่ำ ใจ _ ละ ไกล</code></p>
         </div>
         <div>
           <h3>การจัดห้องและบรรทัด</h3>
@@ -531,11 +531,9 @@ const isOnset = s => s.type==='note' || s.type==='group';
 const onsets = syms => syms.filter(isOnset).length;
 
 // แบ่งเนื้อร้องให้ห้องละคำตามเว้นวรรค - = ห้องที่ไม่มีเนื้อ
-// ถ้าบรรทัดมี | ให้แบ่งด้วย | อย่างเดียว เว้นวรรคจะอยู่ในห้องเดียวกัน
 // คำที่เกินจำนวนห้องไปต่อท้ายห้องสุดท้าย ไม่ให้หายไปเงียบ ๆ
 function addLyrics(cells, text){
-  const w = text.split(text.includes('|') ? '|' : /\s+/)
-    .map(s => s.trim().replace(/\s+/g,' ')).filter(Boolean);
+  const w = text.split(/\s+/).filter(Boolean);
   cells.forEach((c,i)=>{
     const t = i < cells.length-1 ? (w[i]||'') : w.slice(i).join(' ');
     (c.lyr || (c.lyr=[])).push(/^[-–—]+$/.test(t) ? '' : t);
@@ -555,8 +553,26 @@ function addSyllables(cells, text){
     (c.lyr || (c.lyr=[])).push(a);
   }
 }
-const addLyricLine = (cells, body) =>
-  (SYL.test(body) ? addSyllables : addLyrics)(cells, lyricText(body));
+// บรรทัดที่มี | (ขึ้นต้นด้วย " หรือ "" ก็ได้) — | คั่นห้อง คำในห้องเดียวกันเว้นวรรคแยก ลงใต้โน้ตในห้องนั้นทีละตัว
+// || = ห้องว่าง · _ หรือ - = โน้ตที่ไม่มีคำ · คำที่เกินจำนวนโน้ตในห้องต่อท้ายโน้ตตัวสุดท้ายของห้อง
+// ห้องที่ไม่มีโน้ตขึ้นใหม่เลย (ยืดเสียงทั้งห้อง) เก็บคำไว้ใต้ช่องแรก · a.bar บอกให้จัดระเบียบเขียนกลับเป็นแบบ |
+function addBarLyrics(cells, text){
+  const seg = text.split('|');
+  if(seg.length && !seg[0].trim()) seg.shift();                // | ต้นบรรทัดกับท้ายบรรทัดไม่ใช่ห้องว่าง
+  if(seg.length && !seg[seg.length-1].trim()) seg.pop();
+  cells.forEach((c,i)=>{
+    const w = (i < cells.length-1 ? [seg[i]||''] : seg.slice(i)).join(' ')
+      .split(/\s+/).filter(Boolean).map(x => /^[-–—_]+$/.test(x) ? '' : x);
+    const n = Math.max(1, onsets(c.syms)), a = [];
+    for(let k=0;k<n;k++) a.push(k < n-1 ? (w[k]||'') : w.slice(k).filter(Boolean).join(' '));
+    a.bar = true;
+    (c.lyr || (c.lyr=[])).push(a);
+  });
+}
+const addLyricLine = (cells, body) => {
+  const t = lyricText(body);
+  (t.includes('|') ? addBarLyrics : SYL.test(body) ? addSyllables : addLyrics)(cells, t);
+};
 
 function parseScore(text){
   const lines=[];
@@ -998,12 +1014,13 @@ function render(){
         if(Array.isArray(t)){            // พยางค์ละโน้ต — วางใต้ช่องของโน้ตตัวนั้น
           l.className='lyr syl';
           let k=0;
+          const none = !onsets(cell.syms);            // ห้องที่ยืดเสียงทั้งห้อง — คำไปอยู่ใต้ช่องแรก
           cell.syms.forEach((sym,si)=>{
             const s=document.createElement('span');
             if(isOnset(sym)){
               s.textContent = t[k++] || '';
               (sylEls[base+si] || (sylEls[base+si]=[])).push(s);
-            }
+            } else if(none && si===0) s.textContent = t[0] || '';
             l.appendChild(s);
           });
         } else { l.className='lyr'; l.textContent=t; }
@@ -1155,31 +1172,35 @@ function tidy(){
     // บรรทัดเนื้อที่ว่างทั้งบรรทัดตัดได้เฉพาะท้าย ไม่งั้นเนื้อท่อนที่ 2 จะเลื่อนขึ้นไปเป็นท่อนแรก
     // ห้องที่มาจากต่างบรรทัดอาจมีเนื้อคนละแบบในแถวเดียวกัน — แยกเขียนเป็นสองบรรทัด
     const rows = Math.max(0, ...part.map(c => c.lyr ? c.lyr.length : 0));
-    const lyr = [];
+    // แต่ละแถวเขียนกลับตามแบบที่พิมพ์มา: " ห้องละคำ · " ... | ... คั่นห้องด้วย | · "" พยางค์ละโน้ตทั้งบรรทัด
+    const lyr = [];                  // '' = แถวว่าง
     for(let r=0;r<rows;r++){
       const at = c => c.lyr && c.lyr[r];
       if(part.some(c => typeof at(c)==='string')){
         const w = part.map(c => typeof at(c)==='string' && at(c) || '-');
         while(w.length && w[w.length-1]==='-') w.pop();
-        lyr.push({syl:false, w});
+        lyr.push(w.length ? '" ' + w.join(' ') : '');
       }
-      if(part.some(c => Array.isArray(at(c)))){
+      if(part.some(c => Array.isArray(at(c)) && at(c).bar)){
+        const s = part.map(c => {
+          const a = Array.isArray(at(c)) ? at(c).map(x => x || '_') : [];
+          while(a.length && a[a.length-1]==='_') a.pop();
+          return a.length ? a.join(' ') : '-';
+        });
+        while(s.length && s[s.length-1]==='-') s.pop();
+        // ห้องเดียวก็ต้องมี | ไม่งั้นอ่านกลับเป็นบรรทัดห้องละคำ
+        lyr.push(s.length ? '" ' + s.join(' | ') + (s.length===1 ? ' |' : '') : '');
+      }
+      else if(part.some(c => Array.isArray(at(c)))){
         const w = [];
         for(const c of part)
           for(let j=0;j<onsets(c.syms);j++) w.push(Array.isArray(at(c)) && at(c)[j] || '_');
         while(w.length && w[w.length-1]==='_') w.pop();
-        lyr.push({syl:true, w});
+        lyr.push(w.length ? '"" ' + w.join(' ') : '');
       }
     }
-    while(lyr.length && !lyr[lyr.length-1].w.length) lyr.pop();
-    for(const {syl,w} of lyr){
-      if(syl){ out.push('"" ' + (w.length ? w.join(' ') : '_')); continue; }
-      // มีเว้นวรรคในห้องเมื่อไรต้องคั่นด้วย | ห้องเดียวก็ต้องมี | ไม่งั้นอ่านกลับเป็นหลายห้อง
-      const t = !w.length ? '-'
-              : w.some(x => x.includes(' ')) ? w.join(' | ') + (w.length===1 ? ' |' : '')
-              : w.join(' ');
-      out.push('" ' + t);
-    }
+    while(lyr.length && !lyr[lyr.length-1]) lyr.pop();
+    for(const l of lyr) out.push(l || '" -');
   }
   // บรรทัดที่มีแต่คำอธิบาย ไม่มีโน้ต — เก็บไว้ท้ายไฟล์ ไม่ให้หาย
   const orphan = notes.filter((c,li)=> c && lastOf[li]===undefined);

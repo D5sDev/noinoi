@@ -200,26 +200,43 @@ Promise.resolve(btn('play').onclick()).then(() => {
     src.value = 'ดรมฟ ซลทดํ ดํทลซ\nฟมรด ด---'; src.fire('input');
     const plain = meta();
     doc._slots.length = 0;
-    const withLyr = 'ดรมฟ ซลทดํ ดํทลซ\n" ลม พัด | - | ดอกไม้\nฟมรด ด---\n“ร่วง โรย”';
+    const withLyr = 'ดรมฟ ซลทดํ ดํทลซ\n" ลมพัด - ดอกไม้\nฟมรด ด---\n“ร่วง โรย”';
     src.value = withLyr; src.fire('input');
     if (meta() !== plain) die('เนื้อร้องถูกนับเป็นโน้ต: "' + plain + '" → "' + meta() + '"');
     const shown = doc._slots.filter(e => e.className === 'lyr').map(e => e.textContent).join('|');
-    if (shown !== 'ลม พัด||ดอกไม้|ร่วง|โรย') die('เนื้อร้องไม่ตรงห้อง: ' + shown);
+    if (shown !== 'ลมพัด||ดอกไม้|ร่วง|โรย') die('เนื้อร้องไม่ตรงห้อง: ' + shown);
     ok('เนื้อร้อง — ไม่ถูกเล่น · แสดงใต้ห้องถูกตัว (' + shown + ')');
 
     if (btn('trUp')) {
       btn('trUp').onclick();
-      if (!src.value.includes('" ลม พัด | - | ดอกไม้')) die('ขยับคีย์แล้วเนื้อร้องเพี้ยน: ' + src.value);
+      if (!src.value.includes('" ลมพัด - ดอกไม้')) die('ขยับคีย์แล้วเนื้อร้องเพี้ยน: ' + src.value);
       btn('trDown').onclick();
       if (src.value !== withLyr) die('ขยับคีย์ขึ้นลงแล้วโน้ตที่มีเนื้อร้องไม่กลับมาเดิม');
     }
     doc.querySelector('#perLine').value = '2';
     btn('tidy').onclick();
-    const want = 'ดรมฟ ซลทดํ\n" ลม พัด |\nดํทลซ ฟมรด\n" ดอกไม้ ร่วง\nด---\n" โรย';
+    const want = 'ดรมฟ ซลทดํ\n" ลมพัด\nดํทลซ ฟมรด\n" ดอกไม้ ร่วง\nด---\n" โรย';
     if (src.value !== want) die('จัดระเบียบแล้วเนื้อร้องไม่ตามห้อง:\n' + src.value);
     btn('tidy').onclick();
-    if (src.value !== want) die('จัดระเบียบซ้ำแล้วเนื้อที่มีเว้นวรรคแตกห้อง:\n' + src.value);
-    ok('เนื้อร้อง — ขยับคีย์ไม่โดน · จัดระเบียบแล้วตามห้องไป · เว้นวรรคในห้องด้วย | อยู่ครบ');
+    if (src.value !== want) die('จัดระเบียบซ้ำแล้วเนื้อร้องเลื่อน:\n' + src.value);
+    ok('เนื้อร้อง — ขยับคีย์ไม่โดน · จัดระเบียบแล้วตามห้องไป');
+
+    // | คั่นห้อง — คำในห้องเว้นวรรคแยกลงใต้โน้ตในห้องนั้น _ = โน้ตไม่มีคำ - = ห้องว่าง
+    // ห้องที่ยืดเสียงทั้งห้องคำไปอยู่ช่องแรก คำเกินโน้ตไปต่อท้ายโน้ตตัวสุดท้ายของห้อง
+    doc.querySelector('#perLine').value = '8';
+    doc._slots.length = 0;
+    src.value = 'ดรมฟ ซ-ลท ---- ดํ---\n" | ลม พัด เย็น ฉ่ำ | ใจ _ ละ || ไกล แสน |'; src.fire('input');
+    const bars = doc._slots.filter(e => e.className === 'lyr syl')
+      .map(e => e.children.map(s => s.textContent).join(',')).join('|');
+    if (bars !== 'ลม,พัด,เย็น,ฉ่ำ|ใจ,,,ละ|,,,|ไกล แสน,,,') die('คำในห้องที่คั่นด้วย | ไม่ลงใต้โน้ต: ' + bars);
+    ok('คั่นห้องด้วย | — คำลงใต้โน้ตในห้องถูกตัว · || = ห้องว่าง · คำเกินไปรวมที่โน้ตตัวสุดท้าย');
+    doc.querySelector('#perLine').value = '2';
+    btn('tidy').onclick();
+    const wantBar = 'ดรมฟ ซ-ลท\n" ลม พัด เย็น ฉ่ำ | ใจ _ ละ\n---- ดํ---\n" - | ไกล แสน';
+    if (src.value !== wantBar) die('จัดระเบียบแล้วเนื้อแบบ | ไม่ตามโน้ต:\n' + src.value);
+    btn('tidy').onclick();
+    if (src.value !== wantBar) die('จัดระเบียบซ้ำแล้วเนื้อแบบ | เลื่อน:\n' + src.value);
+    ok('คั่นห้องด้วย | — จัดระเบียบแล้วเขียนกลับเป็นแบบ | ตามห้องไปถูก');
 
     // "" พยางค์ละโน้ต — ข้ามช่องยืดเสียงกับหยุดเสียง _ = โน้ตไม่มีคำ
     doc.querySelector('#perLine').value = '8';
