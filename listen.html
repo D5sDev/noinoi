@@ -25,11 +25,14 @@ body{
 h1,h2,h3{margin:0;font-weight:700;letter-spacing:.2px}
 p{margin:0}
 
-/* header */
+/* header
+   ใช้ fixed ไม่ใช้ sticky — บน iPad/iPhone หัวที่เป็น sticky หายไปตอนจอเลื่อนเอง
+   ที่ว่างด้านบนของ body ตั้งจากความสูงจริงของหัวเรื่องใน init()
+   ไม่ใช้ backdrop-filter — ของที่เกาะจอแล้วเบลอฉากหลังชอบหายบน iOS */
 .top{
-  position:sticky; top:0; z-index:20;
+  position:fixed; top:0; left:0; right:0; z-index:20;
   display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
-  padding:12px 20px; background:rgba(20,17,13,.88); backdrop-filter:blur(10px);
+  padding:12px 20px; background:rgba(20,17,13,.97);
   border-bottom:1px solid var(--line);
 }
 .brand{display:flex;align-items:center;gap:12px}
@@ -190,7 +193,7 @@ details[open] summary{margin-bottom:12px}
     position:fixed;left:0;right:0;bottom:0;z-index:30;
     margin:0;gap:6px;flex-wrap:nowrap;align-items:stretch;
     padding:7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
-    background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
+    background:rgba(20,17,13,.98);
     border-top:1px solid var(--line);
   }
   .bar .transport,.bar .fileops{flex:1 1 0;min-width:0;gap:6px;flex-wrap:nowrap}
@@ -1154,6 +1157,13 @@ function doSave(){
 }
 
 function init(){
+  // หัวเรื่องสูงไม่เท่ากันตามความกว้างจอ (ตกบรรทัด) เว้นที่ให้เท่าความสูงจริง
+  const top = document.querySelector('.top');
+  if(top){
+    const pad = () => { document.body.style.paddingTop = top.offsetHeight + 'px'; };
+    pad();
+    if(window.ResizeObserver) new ResizeObserver(pad).observe(top);
+  }
   // แท็บหน้านี้อยู่ท้ายสุด บนมือถือแถบแท็บล้นจอ เลื่อนให้เห็นแท็บที่เปิดอยู่
   const nav = document.querySelector('.pages');
   if(nav) nav.scrollLeft = nav.scrollWidth;
