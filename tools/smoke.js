@@ -35,7 +35,7 @@ function mkEl(id) {
     appendChild(c) { this.children.push(c); this.options.push(c); },
     addEventListener(ev, fn) { (this._ls[ev] || (this._ls[ev] = [])).push(fn); },
     fire(ev, arg) { (this._ls[ev] || []).forEach(fn => fn(arg)); },
-    focus() {}, remove() {}, click() {}, scrollIntoView() {},
+    focus() {}, blur() {}, select() {}, remove() {}, click() {}, scrollIntoView() {},
     closest() { return e; },
     getBoundingClientRect: () => ({ top: 120, bottom: 200, left: 0, right: 100 }),
     querySelector() { return mkEl('_'); },
@@ -51,8 +51,9 @@ const doc = {
     if (!realIds.has(id)) return null;
     return cache[sel] || (cache[sel] = mkEl(id));
   },
-  createElement: () => { created++; const e = mkEl('_'); doc._slots.push(e); return e; },
-  addEventListener() {}, activeElement: null, body: mkEl('body'), _slots: [],
+  createElement: () => { created++; const e = mkEl('_'); doc._slots.push(e); doc._all.push(e); return e; },
+  addEventListener(ev, fn) { (doc._ls[ev] || (doc._ls[ev] = [])).push(fn); },
+  activeElement: null, body: mkEl('body'), _slots: [], _all: [], _ls: {},
 };
 
 // ---- Web Audio จำลอง ----
@@ -263,6 +264,72 @@ Promise.resolve(btn('play').onclick()).then(() => {
     if (src.value !== want2) die('จัดระเบียบซ้ำแล้วพยางค์เลื่อน:\n' + src.value);
     doc.querySelector('#perLine').value = '8';
     ok('เนื้อตามโน้ต — ขยับคีย์ไม่โดน · จัดระเบียบแล้วพยางค์ตามโน้ตไป');
+  }
+
+  // ---- แก้ในตาราง — พิมพ์โน้ตทับช่อง ต่อท้ายเพลง ย้อน แล้วพิมพ์เนื้อใต้โน้ต ----
+  if (btn('editGrid')) {
+    const src = cache['#src'];
+    const kd = (key, o = {}) => (doc._ls.keydown || []).forEach(fn => fn(Object.assign(
+      { key, code: '', target: { tagName: 'BODY' }, preventDefault() {}, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }, o)));
+    const fresh = fn => { doc._slots.length = 0; fn(); };
+    const slots = () => doc._slots.filter(e => e.className === 'slot' && e.textContent !== '+');
+    const ghost = () => doc._slots.find(e => e.className === 'slot' && e.textContent === '+');
+    const lyrIn = doc._all.find(e => e.className === 'lyrin');
+    if (!lyrIn) die('ไม่มีช่องพิมพ์เนื้อร้องในตาราง');
+
+    fresh(() => { src.value = 'ดรมฟ ----'; src.fire('input'); btn('editGrid').onclick(); });
+    if (!ghost()) die('เปิดแก้ในตารางแล้วไม่มีช่อง + ท้ายเพลง');
+    slots()[1].onclick();
+    kd('ซ'); kd('ํ'); kd('-'); kd('จ', { code: 'Digit0' });        // แป้นไทย: ปุ่ม 0 ให้ จ
+    if (src.value !== 'ดซํ-0 ----') die('พิมพ์ทับในตารางไม่ตรง: ' + JSON.stringify(src.value));
+    kd(' ');                                                         // เพิ่งพิมพ์ครบห้อง เว้นวรรคไม่ข้ามห้อง
+    fresh(() => kd('ร'));
+    if (src.value !== 'ดซํ-0 ร---') die('เว้นวรรคหลังพิมพ์ครบห้องไม่ควรข้ามห้อง: ' + JSON.stringify(src.value));
+    ok('แก้ในตาราง — พิมพ์ทับแล้วเลื่อนเอง · ํ ใช้กับตัวที่เพิ่งพิมพ์ · ปุ่ม 0 บนแป้นไทยเป็นหยุดเสียง');
+
+    ghost().onclick();
+    fresh(() => kd('ล'));
+    if (src.value !== 'ดซํ-0 ร--- ล---') die('พิมพ์ที่ช่อง + แล้วไม่ต่อห้องใหม่: ' + JSON.stringify(src.value));
+    kd('Backspace');                                                  // ย้อนกลับไปล้างตัวที่เพิ่งพิมพ์
+    if (src.value !== 'ดซํ-0 ร--- ----') die('Backspace ควรล้างช่องก่อนหน้าเป็น -: ' + JSON.stringify(src.value));
+    kd('z', { ctrlKey: true }); kd('z', { ctrlKey: true });
+    if (src.value !== 'ดซํ-0 ร---') die('Ctrl+Z ย้อนไม่ถูก: ' + JSON.stringify(src.value));
+    const keyBtn = doc._all.find(e => e.className === 'key' && e.textContent === 'ม');
+    slots()[0].onclick(); keyBtn.onclick();
+    if (src.value !== 'มซํ-0 ร---') die('ปุ่มบนแป้นตอนแก้ในตารางควรเขียนลงช่องที่เลือก: ' + JSON.stringify(src.value));
+    ok('แก้ในตาราง — ช่อง + ต่อห้องใหม่ · Backspace ล้างช่อง · Ctrl+Z ย้อน · ปุ่มบนแป้นเขียนลงตาราง');
+
+    // เนื้อร้อง: บรรทัดที่ยังไม่มีเนื้อมีแถวว่างให้แตะ พิมพ์แล้วเว้นวรรคไปโน้ตถัดไป
+    fresh(() => { src.value = 'ดรมฟ ซ---'; src.fire('input'); });
+    const ph = doc._slots.find(e => e.className === 'lyr syl ph');
+    if (!ph) die('บรรทัดที่ยังไม่มีเนื้อควรมีแถวว่างให้แตะ');
+    ph.children[0].onclick();
+    lyrIn.value = 'ลม พัด '; lyrIn.fire('input');
+    lyrIn.value = 'เย็น'; lyrIn.fire('keydown', { key: 'Enter', preventDefault() {} });
+    lyrIn.fire('keydown', { key: 'Enter', preventDefault() {} });     // โน้ตตัวที่ 4 ไม่มีคำ
+    lyrIn.value = 'ฉ่ำ'; lyrIn.fire('keydown', { key: 'Escape', preventDefault() {} });
+    if (src.value !== 'ดรมฟ ซ---\n" ลม พัด เย็น | ฉ่ำ')
+      die('พิมพ์เนื้อในตารางไม่ตรง: ' + JSON.stringify(src.value));
+    ok('เนื้อในตาราง — แตะแถวว่าง พิมพ์ทีละคำ เว้นวรรค/Enter ไปโน้ตถัดไป ได้บรรทัด " … | …');
+
+    fresh(() => { src.value = 'ดรมฟ\n"" ก ข ค ง\nซลทดํ\n" จ ฉ |   // ท่อนหนึ่ง'; src.fire('input'); });
+    doc._slots.find(e => e.className === 'lyr syl').children[1].onclick();
+    lyrIn.value = 'ขอ'; lyrIn.fire('keydown', { key: 'Escape', preventDefault() {} });
+    fresh(() => {});
+    src.fire('input');
+    const bars = doc._slots.filter(e => e.className === 'lyr syl');
+    bars[1].children[0].onclick();
+    lyrIn.value = 'จา'; lyrIn.fire('keydown', { key: 'Escape', preventDefault() {} });
+    if (src.value !== 'ดรมฟ\n"" ก ขอ ค ง\nซลทดํ\n" จา ฉ |   // ท่อนหนึ่ง')
+      die('แก้คำในแถวที่มีอยู่แล้วไม่ตรง หรือคำอธิบายหาย: ' + JSON.stringify(src.value));
+    ok('เนื้อในตาราง — แก้แถว "" กับแถว | ที่มีอยู่ได้ตามแบบเดิม คำอธิบายท้ายบรรทัดอยู่ครบ');
+
+    btn('editGrid').onclick();
+    const before = src.value;
+    kd('ร');
+    if (src.value !== before) die('ปิดแก้ในตารางแล้วพิมพ์ยังลงตาราง');
+    ok('ปิดแก้ในตาราง — แป้นพิมพ์กลับไปเป็นปกติ');
+    fresh(() => { src.value = 'ดรมฟ ซลทดํ ดํทลซ ฟมรด'; src.fire('input'); });
   }
 
   // จุดเริ่มเล่น + พัก/เล่นต่อ

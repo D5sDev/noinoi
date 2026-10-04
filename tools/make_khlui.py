@@ -47,9 +47,9 @@ cut(u"""      <div class="field">
 rep(u"""function tokenizeCell(str){
   const out=[];
   for(let i=0;i<str.length;i++){
-    const ch=str[i];
-    if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie'}); continue; }
-    if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest'}); continue; }
+    const ch=str[i], at=i;
+    if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie',at,len:1}); continue; }
+    if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest',at,len:1}); continue; }
     let deg=NOTE.indexOf(ch);
     if(deg<0) deg=ASCII.indexOf(ch.toLowerCase());
     if(deg<0) continue;                     // ข้ามอักขระที่ไม่รู้จัก
@@ -60,24 +60,24 @@ rep(u"""function tokenizeCell(str){
       else if(n===DOWN||n===','||n==='_'){ oct--; i++; }
       else break;
     }
-    out.push({type:'note',deg,oct});
+    out.push({type:'note',deg,oct,at,len:i-at+1});
   }
   return out;
 }""",
 u"""function tokenizeCell(str){
   const out=[];
   for(let i=0;i<str.length;i++){
-    const ch=str[i];
+    const ch=str[i], at=i;
     if(ch==='('){                           // ลูกสะบัด — หลายเสียงซอยอยู่ในช่องเดียว
       const end=str.indexOf(')',i+1);
       const syms=tokenizeCell(end<0 ? str.slice(i+1) : str.slice(i+1,end));
-      if(syms.length) out.push({type:'group',syms});
       i = end<0 ? str.length : end;
+      if(syms.length) out.push({type:'group',syms,at,len:Math.min(i,str.length-1)-at+1});
       continue;
     }
     if(ch===')') continue;
-    if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie'}); continue; }
-    if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest'}); continue; }
+    if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie',at,len:1}); continue; }
+    if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest',at,len:1}); continue; }
     let deg=NOTE.indexOf(ch);
     if(deg<0) deg=ASCII.indexOf(ch.toLowerCase());
     if(deg<0) continue;                     // ข้ามอักขระที่ไม่รู้จัก
@@ -89,7 +89,7 @@ u"""function tokenizeCell(str){
       else if(n==='*'){ kh=true; i++; }     // เสียงควง — ความถี่เดิม สีเสียงต่าง
       else break;
     }
-    out.push({type:'note',deg,oct,kh});
+    out.push({type:'note',deg,oct,kh,at,len:i-at+1});
   }
   return out;
 }""", "tokenize")
@@ -187,12 +187,14 @@ u"""function cellText(syms){
 
 # ═════ I. แป้นโน้ต: ปุ่มสะบัด / ควง + วางเคอร์เซอร์ ═════
 rep(u"""function insert(txt){
+  if(gridKey(txt)) return;                 // แก้ในตารางอยู่ — ปุ่มบนแป้นเขียนลงช่องที่เลือกแทน
   const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
   el.value = el.value.slice(0,s) + txt + el.value.slice(e);
   el.selectionStart = el.selectionEnd = s + txt.length;
   el.focus(); render();
 }""",
 u"""function insert(txt,back){
+  if(gridKey(txt)) return;                 // แก้ในตารางอยู่ — ปุ่มบนแป้นเขียนลงช่องที่เลือกแทน
   const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
   el.value = el.value.slice(0,s) + txt + el.value.slice(e);
   el.selectionStart = el.selectionEnd = s + txt.length - (back||0);
