@@ -1497,7 +1497,7 @@ function clearHi(){
 }
 
 // เลื่อนตามที่กำลังเล่น — ปกติเลื่อนแค่ในกรอบตาราง หน้าเว็บอยู่นิ่ง
-// ขึ้นแถวใหม่เมื่อไรก็ดันแถวนั้นขึ้นไปชิดบนกรอบเลย ตาจะเห็นแถวถัดไปล่วงหน้าตลอด
+// แถวที่เล่นค้างไว้ราว ⅓ จากบนกรอบ ข้างบนยังเห็นแถวที่เพิ่งเล่น ข้างล่างเห็นแถวถัดไปล่วงหน้า
 // ไม่ต้องรอเล่นถึงก้นกรอบ (บรรทัดที่ตกเป็นหลายแถวบนมือถือก็ตามทีละแถว)
 // ตอนแก้ในตารางกรอบยืดเต็ม ถึงเลื่อนหน้าเว็บแทน เฉพาะตอนขึ้นบรรทัดใหม่ที่หลุดจอ
 let followAt=null, userScrollUntil=0;
@@ -1510,7 +1510,7 @@ function follow(el){
     const y = Math.round(scoreEl.scrollTop + r.top - b.top);   // ตำแหน่งแถวในตาราง ห้องในแถวเดียวกันได้ค่าเดียวกัน
     if(y === followAt) return;
     followAt = y;
-    scoreEl.scrollTo({top:Math.max(0, y - 10), behavior:'smooth'});
+    scoreEl.scrollTo({top:Math.max(0, y - scoreEl.clientHeight/3), behavior:'smooth'});
     return;
   }
   const line = el.closest('.line');
