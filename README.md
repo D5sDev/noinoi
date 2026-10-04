@@ -9,7 +9,7 @@
 | [คู่มือ](https://d5sdev.github.io/noinoi/guide.html) | วิธีเขียนโน้ต เนื้อร้อง แก้ในตาราง ลูกสะบัด/เสียงควง พร้อมตัวอย่าง |
 | [โน้ตไทย](https://d5sdev.github.io/noinoi/thai.html) | เครื่องดนตรีสังเคราะห์ 6 ชนิด |
 | [ขลุ่ย](https://d5sdev.github.io/noinoi/khlui.html) | เสียงขลุ่ยอัดจริง ลูกสะบัด เสียงควง |
-| [ดนตรีคลอ](https://d5sdev.github.io/noinoi/backing.html) | เปิด MIDI ปิดแทร็กทำนอง เลื่อนคีย์ให้ตรงขลุ่ย แล้วเล่นคลอให้เป่าตาม รับ .lyr/.cur ของชุด NCN ให้เนื้อร้องวิ่งตาม |
+| [MIDI Tools](https://d5sdev.github.io/noinoi/backing.html) | เปิด MIDI ปิดแทร็กทำนอง เลื่อนคีย์ให้ตรงขลุ่ย แล้วเล่นคลอให้เป่าตาม รับ .lyr/.cur ของชุด NCN ให้เนื้อร้องวิ่งตาม |
 | [แกะโน้ต](https://d5sdev.github.io/noinoi/listen.html) | แปลงไฟล์ MIDI เป็นโน้ตไทย วางเนื้อร้องจาก .kar หรือ .lyr/.cur ใต้โน้ตให้ — ยังไม่ลิงก์จากเมนู เข้าผ่าน URL ตรง |
 
 ---

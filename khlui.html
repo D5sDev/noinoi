@@ -30,7 +30,8 @@ p{margin:0}
 .top{
   position:sticky; top:0; z-index:20;
   display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
-  padding:12px 20px; background:rgba(20,17,13,.88); backdrop-filter:blur(10px);
+  /* ไม่ใช้ backdrop-filter — บน iPad/iPhone ของที่เกาะจอแล้วเบลอฉากหลังชอบหายไปตอนจอเลื่อนเอง */
+  padding:12px 20px; background:rgba(20,17,13,.97);
   border-bottom:1px solid var(--line);
 }
 .brand{display:flex;align-items:center;gap:12px}
@@ -243,7 +244,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
     position:fixed;left:0;right:0;bottom:0;z-index:30;
     margin:0;gap:6px;flex-wrap:nowrap;align-items:stretch;
     padding:7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
-    background:rgba(20,17,13,.96);backdrop-filter:blur(12px);
+    background:rgba(20,17,13,.98);
     border-top:1px solid var(--line);
   }
   /* สองกลุ่มกว้างเท่ากัน ปุ่มในแต่ละกลุ่มก็เท่ากัน ผลคือทั้งหกปุ่มเท่ากันหมด */
@@ -299,7 +300,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
     <a href="index.html">หน้าแรก</a>
     <a href="thai.html">โน้ตไทย</a>
     <a href="khlui.html" class="on">ขลุ่ย</a>
-    <a href="backing.html">ดนตรีคลอ</a>
+    <a href="backing.html">MIDI Tools</a>
     <a href="guide.html">คู่มือ</a>
   </nav>
   <div class="bar">
@@ -1116,7 +1117,7 @@ function gridSelect(i, scroll){
   const ae = document.activeElement;
   if(ae && ae.tagName === 'BUTTON') ae.blur();          // ปุ่มที่ค้างโฟกัสจะกินปุ่มเว้นวรรคไป
   const el = gSel < steps.length ? slotEls[gSel] : ghostEl;
-  if(scroll !== false && el && el.scrollIntoView) el.scrollIntoView({block:'nearest', inline:'nearest'});
+  if(scroll !== false && el) reveal(el);
 }
 
 // พิมพ์ทับช่องที่เลือกแล้วเลื่อนไปช่องถัดไป เลยท้ายเพลงก็ต่อห้องใหม่ให้
@@ -1238,7 +1239,7 @@ function openLyr(li, r, k, j){
   if(!el){ closeLyr(); return; }
   lyrEd = {li, r, k, j};
   lyrIn.value = lyrWord(lyrVal(li, r, k), j);
-  if(el.scrollIntoView) el.scrollIntoView({block:'nearest', inline:'nearest'});
+  reveal(el);
   const b = el.getBoundingClientRect(), w = Math.max(b.width + 28, 76);
   Object.assign(lyrIn.style, {display:'block', width:w+'px',
     left:(b.left + (window.scrollX||0) + b.width/2 - w/2)+'px', top:(b.top + (window.scrollY||0) - 3)+'px'});
@@ -1601,7 +1602,16 @@ function follow(el){
   followLine = line;
   const r = line.getBoundingClientRect();
   if(r.top < 96 || r.bottom > window.innerHeight-48)  // เห็นอยู่แล้วก็ไม่ต้องเลื่อน
-    line.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+    window.scrollTo({top:Math.max(0, window.scrollY + r.top - (window.innerHeight - r.height)/2), behavior:'smooth'});
+}
+// เลื่อนหน้าเว็บให้เห็น el พอดีขอบ (เคารพ scroll-margin) แทน scrollIntoView
+// บน iPhone/iPad scrollIntoView ลากหัวเรื่องกับแถบปุ่มที่เกาะจอหลุดหายไปด้วย
+function reveal(el){
+  const r = el.getBoundingClientRect();
+  const cs = window.getComputedStyle ? window.getComputedStyle(el) : {};
+  const mt = parseFloat(cs.scrollMarginTop)||0, mb = parseFloat(cs.scrollMarginBottom)||0;
+  const dy = r.top < mt ? r.top - mt : r.bottom > window.innerHeight - mb ? r.bottom - window.innerHeight + mb : 0;
+  if(dy) window.scrollTo(0, window.scrollY + dy);
 }
 ['wheel','touchmove'].forEach(ev =>
   window.addEventListener(ev, ()=>{ userScrollUntil = performance.now()+2500; }, {passive:true}));
