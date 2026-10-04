@@ -1607,23 +1607,27 @@ function clearHi(){
   lastSyl=[];
 }
 
-// เลื่อนตามบรรทัดที่กำลังเล่น — เลื่อนเมื่อขึ้นบรรทัดใหม่เท่านั้น ไม่ใช่ทุกช่อง
-// เลื่อนแค่ในกรอบตาราง หน้าเว็บอยู่นิ่ง ยกเว้นตอนแก้ในตารางที่กรอบยืดเต็ม ถึงเลื่อนหน้าเว็บแทน
-let followLine=null, userScrollUntil=0;
+// เลื่อนตามที่กำลังเล่น — ปกติเลื่อนแค่ในกรอบตาราง หน้าเว็บอยู่นิ่ง
+// ขึ้นแถวใหม่เมื่อไรก็ดันแถวนั้นขึ้นไปชิดบนกรอบเลย ตาจะเห็นแถวถัดไปล่วงหน้าตลอด
+// ไม่ต้องรอเล่นถึงก้นกรอบ (บรรทัดที่ตกเป็นหลายแถวบนมือถือก็ตามทีละแถว)
+// ตอนแก้ในตารางกรอบยืดเต็ม ถึงเลื่อนหน้าเว็บแทน เฉพาะตอนขึ้นบรรทัดใหม่ที่หลุดจอ
+let followAt=null, userScrollUntil=0;
 function follow(el){
   if(!$('#follow').checked) return;
   if(document.activeElement===srcEl) return;          // กำลังพิมพ์โน้ตอยู่ อย่าแย่งจอ
   if(performance.now() < userScrollUntil) return;     // ผู้ใช้เพิ่งเลื่อนเอง
-  const line = el.closest('.line');
-  if(!line || line===followLine) return;
-  followLine = line;
-  const r = line.getBoundingClientRect();
   if(!editOn){
-    const b = scoreEl.getBoundingClientRect(), h = scoreEl.clientHeight;
-    if(r.top < b.top || r.bottom > b.top + h)
-      scoreEl.scrollTo({top:scoreEl.scrollTop + r.top - b.top - (h - r.height)/2, behavior:'smooth'});
+    const b = scoreEl.getBoundingClientRect(), r = (el.closest('.cell') || el).getBoundingClientRect();
+    const y = Math.round(scoreEl.scrollTop + r.top - b.top);   // ตำแหน่งแถวในตาราง ห้องในแถวเดียวกันได้ค่าเดียวกัน
+    if(y === followAt) return;
+    followAt = y;
+    scoreEl.scrollTo({top:Math.max(0, y - 10), behavior:'smooth'});
     return;
   }
+  const line = el.closest('.line');
+  if(!line || line===followAt) return;
+  followAt = line;
+  const r = line.getBoundingClientRect();
   if(r.top < 96 || r.bottom > window.innerHeight-48)  // เห็นอยู่แล้วก็ไม่ต้องเลื่อน
     window.scrollTo({top:Math.max(0, window.scrollY + r.top - (window.innerHeight - r.height)/2), behavior:'smooth'});
 }
@@ -1678,7 +1682,7 @@ async function start(from){
   if(token !== startToken) return;
   graph = buildGraph(c,o);
   playing=true; stepIdx=begin; curStep=begin; pausedAt=null;
-  hiQ=[]; endTime=Infinity; followLine=null; userScrollUntil=0;
+  hiQ=[]; endTime=Infinity; followAt=null; userScrollUntil=0;
   $('#pause').disabled=false; $('#pauseLbl').textContent=' พัก';
   nextTime = c.currentTime + .12;
   $('#playLbl').textContent=' เล่นใหม่'; $('#stop').disabled=false;
