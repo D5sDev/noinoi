@@ -171,7 +171,20 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
   width:0;min-width:100%;min-height:1.45em;padding:0 2px;
   font-size:14px;line-height:1.45;text-align:center;color:#d8cbb6;overflow-wrap:anywhere;
 }
-.cell:has(.slot.on) .lyr{color:var(--gold)}
+.cell:has(.slot.on) .lyr:not(.syl){color:var(--gold)}
+/* พยางค์ละโน้ต — ช่องย่อยแบ่งเท่ากันด้วย gap เดียวกับช่องโน้ต จึงตรงช่องพอดีทั้งจอกว้างและมือถือ
+   (สำรองไว้ให้เบราว์เซอร์ที่ไม่มี subgrid — คำที่กว้างกว่าช่องจะล้นออกสองข้าง) */
+.cell .lyr.syl{display:flex;gap:3px;padding:0}
+.lyr.syl span{flex:1 1 0;min-width:0;display:flex;justify-content:center;white-space:nowrap}
+.lyr.syl .on{color:var(--gold)}
+/* ช่องโน้ตกับพยางค์ใช้คอลัมน์เดียวกัน พยางค์ยาวขยายช่องโน้ตตามแทนที่จะล้นทับพยางค์ข้าง ๆ
+   จำนวนคอลัมน์ตั้งจาก render() */
+@supports (grid-template-columns:subgrid){
+  .cell.syls{display:grid}
+  .cell.syls > *{grid-column:1/-1}
+  .cell.syls .slots,.cell.syls .lyr.syl{display:grid;grid-template-columns:subgrid;width:auto;min-width:0}
+  .cell.syls .slot{width:auto;min-width:34px}
+}
 .empty{color:var(--dim);font-size:13.5px;padding:14px 2px}
 
 /* help */
@@ -250,6 +263,7 @@ details[open] summary{margin-bottom:12px}
   /* ช่องโน้ตเล็กลงหน่อย จะได้ลงบรรทัดละหลายห้อง */
   .slot{width:30px;height:34px;font-size:17px}
   .cell .lyr{font-size:13px}
+  .cell.syls .slot{min-width:30px}
   .cells{gap:5px}
   .linenum{flex-basis:20px;font-size:11px}
   .line{scroll-margin-top:66px}      /* เผื่อความสูงของหัวเรื่องที่หนึบอยู่ */
@@ -302,7 +316,7 @@ details[open] summary{margin-bottom:12px}
       <span class="subhint" id="lsNote"></span>
     </div>
     <div class="keys" id="keys"></div>
-    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป · บรรทัดขึ้นต้นด้วย " = เนื้อร้อง<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
+    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป · บรรทัดขึ้นต้นด้วย " = เนื้อร้องห้องละคำ "" = พยางค์ละโน้ต<br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
   </section>
 
   <section class="panel">
@@ -429,8 +443,9 @@ details[open] summary{margin-bottom:12px}
             <li><code>//</code> หรือ <code>#</code> ท้ายบรรทัด = คำอธิบาย ไม่ถูกเล่น</li>
             <li><code>"</code> ขึ้นต้นบรรทัด = <b>เนื้อร้อง</b>ของบรรทัดโน้ตข้างบน คำละห้องตามเว้นวรรค ห้องที่ไม่มีเนื้อใส่ <code>-</code> มีหลายท่อนก็ใส่หลายบรรทัด</li>
             <li>อยากเว้นวรรคในห้อง ให้คั่นห้องด้วย <code>|</code> แทน — บรรทัดเนื้อที่มี <code>|</code> จะแบ่งห้องด้วย <code>|</code> อย่างเดียว</li>
+            <li><code>""</code> ขึ้นต้นบรรทัด = เนื้อร้อง<b>พยางค์ละโน้ต</b> — คำลงใต้โน้ตทีละตัวตามลำดับ ข้ามช่อง <code>-</code> กับ <code>0</code> ให้เอง เว้นวรรคแยกพยางค์ <code>_</code> = โน้ตที่ไม่มีคำ (เอื้อน)</li>
           </ul>
-          <p class="note">ตัวอย่าง<br><code>ดรมฟ ซลทดํ ดํทลซ ฟมรด</code><br><code>" ลมพัด - เย็นฉ่ำ ใจ</code><br><code>" ลม พัด | - | เย็น ฉ่ำ | ใจ</code></p>
+          <p class="note">ตัวอย่าง<br><code>---ซ ---ล ---ท ดํ---</code><br><code>" ลม พัด | - | เย็น ฉ่ำ | ใจ</code><br><code>"" ลม พัด เย็น ฉ่ำ</code></p>
         </div>
         <div>
           <h3>การจัดห้องและบรรทัด</h3>
@@ -506,8 +521,14 @@ function tokenizeCell(str){
 }
 
 // บรรทัดเนื้อร้องขึ้นต้นด้วย " (iOS อาจเปลี่ยนเป็น “ ให้เอง) — เป็นเนื้อของบรรทัดโน้ตข้างบน
+// " = ห้องละคำ, "" = พยางค์ละโน้ต
 const LYR = /^\s*["“”]/;
-const lyricText = body => body.replace(LYR,'').replace(/["“”]\s*$/,'');
+const SYL = /^\s*["“”]{2}/;
+const lyricText = body => body.replace(SYL.test(body) ? SYL : LYR,'').replace(/["“”]\s*$/,'');
+
+// ช่องที่มีเสียงขึ้นใหม่ — ช่องยืดเสียงกับหยุดเสียงไม่ได้รับพยางค์
+const isOnset = s => s.type==='note' || s.type==='group';
+const onsets = syms => syms.filter(isOnset).length;
 
 // แบ่งเนื้อร้องให้ห้องละคำตามเว้นวรรค - = ห้องที่ไม่มีเนื้อ
 // ถ้าบรรทัดมี | ให้แบ่งด้วย | อย่างเดียว เว้นวรรคจะอยู่ในห้องเดียวกัน
@@ -521,13 +542,29 @@ function addLyrics(cells, text){
   });
 }
 
+// พยางค์ละโน้ตตามลำดับ ข้ามช่องยืดเสียงกับหยุดเสียงให้เอง _ = โน้ตที่ไม่มีคำ (เอื้อน)
+// แต่ละห้องเก็บเป็นอาร์เรย์ หนึ่งพยางค์ต่อหนึ่งเสียงในห้องนั้น — พยางค์ที่เกินไปต่อท้ายโน้ตตัวสุดท้าย
+function addSyllables(cells, text){
+  const w = text.split(/[\s|]+/).filter(Boolean).map(x => /^[-–—_]+$/.test(x) ? '' : x);
+  const total = cells.reduce((a,c) => a + onsets(c.syms), 0);
+  let k = 0;
+  for(const c of cells){
+    const a = [];
+    for(let j=onsets(c.syms); j>0; j--, k++)
+      a.push(k < total-1 ? (w[k]||'') : w.slice(k).filter(Boolean).join(' '));
+    (c.lyr || (c.lyr=[])).push(a);
+  }
+}
+const addLyricLine = (cells, body) =>
+  (SYL.test(body) ? addSyllables : addLyrics)(cells, lyricText(body));
+
 function parseScore(text){
   const lines=[];
   for(const raw of text.split(/\r?\n/)){
     const body = raw.split('//')[0].split('#')[0].trim();
     if(!body) continue;
     if(LYR.test(body)){
-      if(lines.length) addLyrics(lines[lines.length-1], lyricText(body));
+      if(lines.length) addLyricLine(lines[lines.length-1], body);
       continue;
     }
     const cells = body.split(/[\s|]+/).filter(Boolean)
@@ -878,6 +915,7 @@ const PRESETS = [
 /* ══════════ 5. UI ══════════ */
 const srcEl=$('#src'), scoreEl=$('#score'), metaEl=$('#meta');
 let slotEls=[], curScore=[];
+let sylEls=[], sylAt=[];   // ช่องที่ → พยางค์ใต้ช่องนั้น / ช่องที่ → ช่องของพยางค์ที่กำลังร้อง
 
 function readOpts(){
   // สองเรื่องนี้แยกกันเป็นอิสระ:
@@ -913,7 +951,7 @@ function fmtTime(s){
 function render(){
   const o = readOpts();
   curScore = parseScore(srcEl.value);
-  scoreEl.innerHTML=''; slotEls=[]; steps=[];
+  scoreEl.innerHTML=''; slotEls=[]; steps=[]; sylEls=[]; sylAt=[];
   if(!curScore.length){
     scoreEl.innerHTML = '<p class="empty">ยังไม่มีโน้ต — พิมพ์โน้ตในช่องด้านบน หรือเลือกตัวอย่าง</p>';
     metaEl.textContent=''; return;
@@ -951,8 +989,24 @@ function render(){
                        : ks.includes('ching') ? 'ฉิ่ง' : '';
       }
       c.appendChild(foot); c.appendChild(slots);
+      const base = slotEls.length - n;
+      if((cell.lyr||[]).some(Array.isArray)){
+        c.classList.add('syls'); c.style.gridTemplateColumns = 'repeat('+n+',auto)';
+      }
       for(const t of cell.lyr||[]){
-        const l=document.createElement('div'); l.className='lyr'; l.textContent=t;
+        const l=document.createElement('div');
+        if(Array.isArray(t)){            // พยางค์ละโน้ต — วางใต้ช่องของโน้ตตัวนั้น
+          l.className='lyr syl';
+          let k=0;
+          cell.syms.forEach((sym,si)=>{
+            const s=document.createElement('span');
+            if(isOnset(sym)){
+              s.textContent = t[k++] || '';
+              (sylEls[base+si] || (sylEls[base+si]=[])).push(s);
+            }
+            l.appendChild(s);
+          });
+        } else { l.className='lyr'; l.textContent=t; }
         c.appendChild(l);
       }
       wrap.appendChild(c);
@@ -960,6 +1014,9 @@ function render(){
     });
     line.appendChild(num); line.appendChild(wrap); scoreEl.appendChild(line);
   });
+  // ช่องยืดเสียงยังร้องพยางค์ของโน้ตก่อนหน้าอยู่ หยุดเสียงแล้วไม่มีพยางค์ไหนติดสี
+  let on=-1;
+  steps.forEach((st,i)=>{ if(st.sym.type==='rest') on=-1; else if(isOnset(st.sym)) on=i; sylAt.push(on); });
   if(startStep >= steps.length) startStep = 0;
   markStart();
   const fd = firstDeg(), selN = $('#startNote');
@@ -1068,7 +1125,7 @@ function tidy(){
     const body = line.split('//')[0].split('#')[0].trim();
     if(LYR.test(body)){
       if(!prev){ head.push(line.trim()); notes[li]=''; return; }
-      addLyrics(prev, lyricText(body));
+      addLyricLine(prev, body);
       const k = prev[0].src;         // คำอธิบายท้ายบรรทัดเนื้อ ย้ายไปอยู่กับบรรทัดโน้ตของมัน
       if(notes[li]){ notes[k] = notes[k] ? notes[k]+' '+notes[li] : notes[li]; notes[li]=''; }
       return;
@@ -1076,7 +1133,7 @@ function tidy(){
     const mine=[];
     for(const tok of body.split(/[\s|]+/).filter(Boolean)){
       const syms = tokenizeCell(tok);
-      if(syms.length){ const c={txt:cellText(syms), src:li}; cells.push(c); mine.push(c); }
+      if(syms.length){ const c={txt:cellText(syms), src:li, syms}; cells.push(c); mine.push(c); }
     }
     if(mine.length) prev=mine;
   });
@@ -1096,15 +1153,27 @@ function tidy(){
     out.push(line);
     // เนื้อร้องตามห้องของมันลงมา ห้องว่างเป็น - ตัดที่ว่างท้ายบรรทัดทิ้ง
     // บรรทัดเนื้อที่ว่างทั้งบรรทัดตัดได้เฉพาะท้าย ไม่งั้นเนื้อท่อนที่ 2 จะเลื่อนขึ้นไปเป็นท่อนแรก
+    // ห้องที่มาจากต่างบรรทัดอาจมีเนื้อคนละแบบในแถวเดียวกัน — แยกเขียนเป็นสองบรรทัด
     const rows = Math.max(0, ...part.map(c => c.lyr ? c.lyr.length : 0));
     const lyr = [];
     for(let r=0;r<rows;r++){
-      const w = part.map(c => (c.lyr && c.lyr[r]) || '-');
-      while(w.length && w[w.length-1]==='-') w.pop();
-      lyr.push(w);
+      const at = c => c.lyr && c.lyr[r];
+      if(part.some(c => typeof at(c)==='string')){
+        const w = part.map(c => typeof at(c)==='string' && at(c) || '-');
+        while(w.length && w[w.length-1]==='-') w.pop();
+        lyr.push({syl:false, w});
+      }
+      if(part.some(c => Array.isArray(at(c)))){
+        const w = [];
+        for(const c of part)
+          for(let j=0;j<onsets(c.syms);j++) w.push(Array.isArray(at(c)) && at(c)[j] || '_');
+        while(w.length && w[w.length-1]==='_') w.pop();
+        lyr.push({syl:true, w});
+      }
     }
-    while(lyr.length && !lyr[lyr.length-1].length) lyr.pop();
-    for(const w of lyr){
+    while(lyr.length && !lyr[lyr.length-1].w.length) lyr.pop();
+    for(const {syl,w} of lyr){
+      if(syl){ out.push('"" ' + (w.length ? w.join(' ') : '_')); continue; }
       // มีเว้นวรรคในห้องเมื่อไรต้องคั่นด้วย | ห้องเดียวก็ต้องมี | ไม่งั้นอ่านกลับเป็นหลายห้อง
       const t = !w.length ? '-'
               : w.some(x => x.includes(' ')) ? w.join(' | ') + (w.length===1 ? ' |' : '')
@@ -1158,14 +1227,16 @@ function insert(txt,back){
     row.appendChild(b);
   });
   // เนื้อร้องต้องอยู่บรรทัดของตัวเอง — ขึ้นบรรทัดใหม่ต่อท้ายบรรทัดที่เคอร์เซอร์อยู่
-  const lyr=document.createElement('button'); lyr.className='key util'; lyr.textContent='" เนื้อร้อง';
-  lyr.title='เพิ่มบรรทัดเนื้อร้องใต้บรรทัดโน้ตนี้ — คำละห้อง เว้นวรรคแบ่งห้อง';
-  lyr.onclick=()=>{
-    const el=srcEl; let e=el.value.indexOf('\n', el.selectionEnd);
-    if(e<0) e=el.value.length;
-    el.selectionStart=el.selectionEnd=e; insert('\n" ');
-  };
-  row.appendChild(lyr);
+  [['" เนื้อตามห้อง','\n" ','เพิ่มบรรทัดเนื้อร้องใต้บรรทัดโน้ตนี้ — คำละห้อง เว้นวรรคแบ่งห้อง'],
+   ['"" เนื้อตามโน้ต','\n"" ','เพิ่มบรรทัดเนื้อร้องใต้บรรทัดโน้ตนี้ — พยางค์ละโน้ต เว้นวรรคแยกพยางค์ _ = โน้ตที่ไม่มีคำ']].forEach(k=>{
+    const b=document.createElement('button'); b.className='key util'; b.textContent=k[0]; b.title=k[2];
+    b.onclick=()=>{
+      const el=srcEl; let e=el.value.indexOf('\n', el.selectionEnd);
+      if(e<0) e=el.value.length;
+      el.selectionStart=el.selectionEnd=e; insert(k[1]);
+    };
+    row.appendChild(b);
+  });
   const del=document.createElement('button'); del.className='key util'; del.textContent='⌫ ลบ';
   del.onclick=()=>{
     const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
@@ -1197,7 +1268,12 @@ function preview(deg,oct){
   const g = (graph && playing) ? graph : previewG;
   ensureSamples(c, o.inst).then(()=>playTone(c,g.bus,freqOf(deg,oct,o),c.currentTime+.02,.5,o.inst));
 }
-function clearHi(){ if(lastEl){ lastEl.classList.remove('on'); lastEl=null; } }
+let lastSyl=[];
+function clearHi(){
+  if(lastEl){ lastEl.classList.remove('on'); lastEl=null; }
+  for(const s of lastSyl) s.classList.remove('on');
+  lastSyl=[];
+}
 
 // เลื่อนจอตามบรรทัดที่กำลังเล่น — เลื่อนเมื่อขึ้นบรรทัดใหม่เท่านั้น ไม่ใช่ทุกช่อง
 let followLine=null, userScrollUntil=0;
@@ -1272,6 +1348,8 @@ function tick(){
     curStep = target;
     if(slotEls[target] && slotEls[target]!==lastEl){
       clearHi(); lastEl=slotEls[target]; lastEl.classList.add('on');
+      lastSyl = sylEls[sylAt[target]] || [];
+      for(const s of lastSyl) s.classList.add('on');
       follow(lastEl);
     }
   }

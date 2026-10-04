@@ -219,8 +219,33 @@ Promise.resolve(btn('play').onclick()).then(() => {
     if (src.value !== want) die('จัดระเบียบแล้วเนื้อร้องไม่ตามห้อง:\n' + src.value);
     btn('tidy').onclick();
     if (src.value !== want) die('จัดระเบียบซ้ำแล้วเนื้อที่มีเว้นวรรคแตกห้อง:\n' + src.value);
-    doc.querySelector('#perLine').value = '8';
     ok('เนื้อร้อง — ขยับคีย์ไม่โดน · จัดระเบียบแล้วตามห้องไป · เว้นวรรคในห้องด้วย | อยู่ครบ');
+
+    // "" พยางค์ละโน้ต — ข้ามช่องยืดเสียงกับหยุดเสียง _ = โน้ตไม่มีคำ
+    doc.querySelector('#perLine').value = '8';
+    src.value = 'ดรมฟ ซ--- -ล-ท 0ดํ--'; src.fire('input');
+    const plain2 = meta();
+    doc._slots.length = 0;
+    const withSyl = 'ดรมฟ ซ--- -ล-ท 0ดํ--\n"" ลม พัด _ ฉ่ำ ใจ ละ มุน ไม';
+    src.value = withSyl; src.fire('input');
+    if (meta() !== plain2) die('พยางค์ถูกนับเป็นโน้ต');
+    const rows = doc._slots.filter(e => e.className === 'lyr syl')
+      .map(e => e.children.map(s => s.textContent).join(',')).join('|');
+    if (rows !== 'ลม,พัด,,ฉ่ำ|ใจ,,,|,ละ,,มุน|,ไม,,') die('พยางค์ไม่ตรงโน้ต: ' + rows);
+    ok('เนื้อตามโน้ต — พยางค์ลงใต้โน้ตถูกช่อง ข้าม - กับ 0');
+
+    if (btn('trUp')) {
+      btn('trUp').onclick(); btn('trDown').onclick();
+      if (src.value !== withSyl) die('ขยับคีย์ขึ้นลงแล้วบรรทัดพยางค์เปลี่ยน: ' + src.value);
+    }
+    doc.querySelector('#perLine').value = '2';
+    btn('tidy').onclick();
+    const want2 = 'ดรมฟ ซ---\n"" ลม พัด _ ฉ่ำ ใจ\n-ล-ท 0ดํ--\n"" ละ มุน ไม';
+    if (src.value !== want2) die('จัดระเบียบแล้วพยางค์ไม่ตามโน้ต:\n' + src.value);
+    btn('tidy').onclick();
+    if (src.value !== want2) die('จัดระเบียบซ้ำแล้วพยางค์เลื่อน:\n' + src.value);
+    doc.querySelector('#perLine').value = '8';
+    ok('เนื้อตามโน้ต — ขยับคีย์ไม่โดน · จัดระเบียบแล้วพยางค์ตามโน้ตไป');
   }
 
   // จุดเริ่มเล่น + พัก/เล่นต่อ
