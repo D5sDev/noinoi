@@ -134,7 +134,14 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
 .check input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
 
 /* score */
-.score{display:flex;flex-direction:column;gap:14px;overflow-x:auto;padding-bottom:4px}
+/* ตารางเลื่อนในกรอบตัวเอง ตอนเล่นหน้าเว็บจะได้อยู่นิ่ง — สูงพอดีจอใต้หัวเรื่อง (--toph ตั้งใน init())
+   ใช้ svh ด้วยถ้ามี บน iPhone/iPad 100vh สูงกว่าจอที่เห็นจริงตอนแถบเบราว์เซอร์ยังโผล่อยู่ */
+.score{
+  display:flex;flex-direction:column;gap:14px;overflow:auto;padding-bottom:4px;
+  max-height:max(240px, calc(100vh - var(--toph, 70px) - 100px));
+  max-height:max(240px, calc(100svh - var(--toph, 70px) - 100px));
+  scrollbar-color:var(--line2) transparent;
+}
 .line{display:flex;gap:10px;align-items:stretch;scroll-margin-top:96px;scroll-margin-bottom:56px}
 .linenum{
   flex:0 0 26px;display:grid;place-items:center;
@@ -212,6 +219,7 @@ body.editing #keys{
   background:rgba(20,17,13,.97);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.45);
 }
 body.editing{padding-bottom:200px}
+body.editing .score{max-height:none}   /* แป้นโน้ตบังก้นจอ กรอบเลื่อนในตัวจะโดนบัง ให้หน้าเว็บเลื่อนแทน */
 body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-top:90px;scroll-margin-bottom:220px}
 .empty{color:var(--dim);font-size:13.5px;padding:14px 2px}
 .hint a{color:var(--gold)}
@@ -287,6 +295,10 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .cells{gap:5px}
   .linenum{flex-basis:20px;font-size:11px}
   .line{scroll-margin-top:66px}      /* เผื่อความสูงของหัวเรื่องที่หนึบอยู่ */
+  .score{                            /* แถบปุ่มล่างจอกินที่อีก 64px หัวตารางก็ตกเป็นหลายแถว */
+    max-height:max(200px, calc(100vh - var(--toph, 60px) - 190px - env(safe-area-inset-bottom, 0px)));
+    max-height:max(200px, calc(100svh - var(--toph, 60px) - 190px - env(safe-area-inset-bottom, 0px)));
+  }
 }
 </style>
 </head>
@@ -946,6 +958,7 @@ function fmtTime(s){
 function render(){
   const o = readOpts();
   curScore = parseScore(srcEl.value);
+  const keepY = scoreEl.scrollTop;      // สร้างตารางใหม่แล้วกรอบไม่เด้งกลับขึ้นบนสุด
   scoreEl.innerHTML=''; slotEls=[]; steps=[]; sylEls=[]; sylAt=[]; lyrAt.clear(); ghostEl=null;
   if(!curScore.length){
     scoreEl.innerHTML = '<p class="empty">ยังไม่มีโน้ต — พิมพ์โน้ตในช่องด้านบน หรือเลือกตัวอย่าง</p>';
@@ -1046,6 +1059,7 @@ function render(){
     if(fd >= 0) selN.value = String(fd);
   }
   updateMeta();
+  scoreEl.scrollTop = keepY;
 }
 
 // จุดเริ่มเล่น — คลิกช่องเดิมซ้ำเพื่อกลับไปเริ่มต้นบรรทัดแรก
@@ -1593,7 +1607,8 @@ function clearHi(){
   lastSyl=[];
 }
 
-// เลื่อนจอตามบรรทัดที่กำลังเล่น — เลื่อนเมื่อขึ้นบรรทัดใหม่เท่านั้น ไม่ใช่ทุกช่อง
+// เลื่อนตามบรรทัดที่กำลังเล่น — เลื่อนเมื่อขึ้นบรรทัดใหม่เท่านั้น ไม่ใช่ทุกช่อง
+// เลื่อนแค่ในกรอบตาราง หน้าเว็บอยู่นิ่ง ยกเว้นตอนแก้ในตารางที่กรอบยืดเต็ม ถึงเลื่อนหน้าเว็บแทน
 let followLine=null, userScrollUntil=0;
 function follow(el){
   if(!$('#follow').checked) return;
@@ -1603,6 +1618,12 @@ function follow(el){
   if(!line || line===followLine) return;
   followLine = line;
   const r = line.getBoundingClientRect();
+  if(!editOn){
+    const b = scoreEl.getBoundingClientRect(), h = scoreEl.clientHeight;
+    if(r.top < b.top || r.bottom > b.top + h)
+      scoreEl.scrollTo({top:scoreEl.scrollTop + r.top - b.top - (h - r.height)/2, behavior:'smooth'});
+    return;
+  }
   if(r.top < 96 || r.bottom > window.innerHeight-48)  // เห็นอยู่แล้วก็ไม่ต้องเลื่อน
     window.scrollTo({top:Math.max(0, window.scrollY + r.top - (window.innerHeight - r.height)/2), behavior:'smooth'});
 }
@@ -1762,10 +1783,14 @@ async function exportWav(){
 
 /* ---------- ผูก event ---------- */
 (function init(){
-  // หัวเรื่องสูงไม่เท่ากันตามความกว้างจอ (ตกบรรทัด) เว้นที่ให้เท่าความสูงจริง
+  // หัวเรื่องสูงไม่เท่ากันตามความกว้างจอ (ตกบรรทัด) เว้นที่ให้เท่าความสูงจริง กรอบตารางโน้ตก็ใช้ค่านี้
   const top=document.querySelector('.top');
   if(top){
-    const pad=()=>{ document.body.style.paddingTop=top.offsetHeight+'px'; };
+    const pad=()=>{
+      const h=top.offsetHeight+'px';
+      document.body.style.paddingTop=h;
+      document.documentElement.style.setProperty('--toph', h);
+    };
     pad();
     if(window.ResizeObserver) new ResizeObserver(pad).observe(top);
   }
