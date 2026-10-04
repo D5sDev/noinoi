@@ -10,7 +10,7 @@
   --bg:#14110d; --bg2:#1c1813; --line:#3a3025; --line2:#4d3f2e;
   --fg:#f2e9db; --dim:#a2937d; --gold:#e0b24d; --gold-dim:#8a6d2c;
   --red:#c8553d; --slot:#241f18; --ink:#100e0a;
-  --head:62px;                       /* ความสูงหัวเรื่องที่หนึบอยู่ เผื่อตอนกระโดดไปหัวข้อ */
+  --head:62px;                       /* ความสูงหัวเรื่อง — สคริปต์ท้ายหน้าวัดค่าจริงมาแทน */
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -23,16 +23,18 @@ body{
   color:var(--fg);
   font-family:'Sarabun','Noto Sans Thai','Leelawadee UI','Segoe UI',system-ui,sans-serif;
   font-size:15.5px; line-height:1.75; min-height:100vh;
+  padding-top:var(--head);
 }
 h1,h2,h3{margin:0;font-weight:700;letter-spacing:.2px}
 p{margin:0}
 a{color:var(--gold)}
 
-/* หัวเรื่อง — แบบเดียวกับหน้าเล่นโน้ต */
+/* หัวเรื่อง — แบบเดียวกับหน้าเล่นโน้ต
+   ใช้ fixed ไม่ใช้ sticky — บน iPad/iPhone ของที่เป็น sticky หายไปตอนกดสารบัญแล้วจอเลื่อนเอง */
 .top{
-  position:sticky; top:0; z-index:20;
+  position:fixed; top:0; left:0; right:0; z-index:20;
   display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
-  padding:12px 20px; background:rgba(20,17,13,.88); backdrop-filter:blur(10px);
+  padding:12px 20px; background:rgba(20,17,13,.97);
   border-bottom:1px solid var(--line);
 }
 .brand{display:flex;align-items:center;gap:12px}
@@ -54,7 +56,7 @@ a{color:var(--gold)}
   max-width:1080px;margin:0 auto;padding:34px 22px 80px;
   display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px;align-items:start;
 }
-.toc{position:sticky;top:calc(var(--head) + 26px)}
+.toc{position:fixed;top:calc(var(--head) + 34px);width:200px}   /* fixed เหตุผลเดียวกับหัวเรื่อง ไม่ใส่ left ให้อยู่ตรงคอลัมน์แรกเอง */
 .toc b{display:block;font-size:12.5px;color:var(--dim);font-weight:600;margin-bottom:8px}
 .toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
 .toc a{
@@ -64,7 +66,7 @@ a{color:var(--gold)}
 .toc a:hover{color:var(--fg)}
 .toc a[aria-current="true"]{color:var(--gold);border-left-color:var(--gold)}
 
-article{max-width:46rem}                 /* กว้างพอให้ตัวอย่าง 4 ห้องอยู่แถวเดียว */
+article{grid-column:2;max-width:46rem}                 /* กว้างพอให้ตัวอย่าง 4 ห้องอยู่แถวเดียว */
 article p{max-width:68ch}
 .intro h2{font-size:27px;line-height:1.3;text-wrap:balance}
 .intro p{color:var(--dim);margin-top:10px}
@@ -150,7 +152,7 @@ footer a:hover{text-decoration:underline}
 @media(max-width:860px){
   .page{grid-template-columns:1fr;gap:0;padding-top:20px}
   /* สารบัญกลายเป็นแถบชิปเลื่อนข้างได้ ไม่หนึบ จะได้ไม่กินที่อ่าน */
-  .toc{position:static;margin:0 -22px;padding:0 22px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .toc{position:static;width:auto;margin:0 -22px;padding:0 22px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .toc::-webkit-scrollbar{display:none}
   .toc b{display:none}
   .toc ol{display:flex;gap:6px;border:0;width:max-content}
@@ -159,7 +161,7 @@ footer a:hover{text-decoration:underline}
     background:var(--bg2);font-size:13px;
   }
   .toc a[aria-current="true"]{border-color:var(--gold-dim);background:#2a2216}
-  article{max-width:none;margin-top:22px}
+  article{grid-column:auto;max-width:none;margin-top:22px}
 }
 
 @media(max-width:640px){
@@ -426,6 +428,13 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <script>
+// หัวเรื่องสูงไม่เท่ากันตามความกว้างจอ (ตกบรรทัด) วัดจริงแล้วใช้เว้นที่ด้านบนกับจุดกระโดดไปหัวข้อ
+(() => {
+  const top = document.querySelector('.top');
+  const set = () => document.documentElement.style.setProperty('--head', top.offsetHeight + 'px');
+  set();
+  if(window.ResizeObserver) new ResizeObserver(set).observe(top);
+})();
 // สารบัญติดสีหัวข้อที่กำลังอ่าน — ไม่มี IntersectionObserver ก็แค่ไม่ติดสี
 (() => {
   const links = [...document.querySelectorAll('.toc a')];
