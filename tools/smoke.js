@@ -200,25 +200,27 @@ Promise.resolve(btn('play').onclick()).then(() => {
     src.value = 'ดรมฟ ซลทดํ ดํทลซ\nฟมรด ด---'; src.fire('input');
     const plain = meta();
     doc._slots.length = 0;
-    const withLyr = 'ดรมฟ ซลทดํ ดํทลซ\n" ลมพัด - ดอกไม้\nฟมรด ด---\n“ร่วง”';
+    const withLyr = 'ดรมฟ ซลทดํ ดํทลซ\n" ลม พัด | - | ดอกไม้\nฟมรด ด---\n“ร่วง โรย”';
     src.value = withLyr; src.fire('input');
     if (meta() !== plain) die('เนื้อร้องถูกนับเป็นโน้ต: "' + plain + '" → "' + meta() + '"');
     const shown = doc._slots.filter(e => e.className === 'lyr').map(e => e.textContent).join('|');
-    if (shown !== 'ลมพัด||ดอกไม้|ร่วง|') die('เนื้อร้องไม่ตรงห้อง: ' + shown);
+    if (shown !== 'ลม พัด||ดอกไม้|ร่วง|โรย') die('เนื้อร้องไม่ตรงห้อง: ' + shown);
     ok('เนื้อร้อง — ไม่ถูกเล่น · แสดงใต้ห้องถูกตัว (' + shown + ')');
 
     if (btn('trUp')) {
       btn('trUp').onclick();
-      if (!src.value.includes('" ลมพัด - ดอกไม้')) die('ขยับคีย์แล้วเนื้อร้องเพี้ยน: ' + src.value);
+      if (!src.value.includes('" ลม พัด | - | ดอกไม้')) die('ขยับคีย์แล้วเนื้อร้องเพี้ยน: ' + src.value);
       btn('trDown').onclick();
       if (src.value !== withLyr) die('ขยับคีย์ขึ้นลงแล้วโน้ตที่มีเนื้อร้องไม่กลับมาเดิม');
     }
     doc.querySelector('#perLine').value = '2';
     btn('tidy').onclick();
-    const want = 'ดรมฟ ซลทดํ\n" ลมพัด\nดํทลซ ฟมรด\n" ดอกไม้ ร่วง\nด---';
+    const want = 'ดรมฟ ซลทดํ\n" ลม พัด |\nดํทลซ ฟมรด\n" ดอกไม้ ร่วง\nด---\n" โรย';
     if (src.value !== want) die('จัดระเบียบแล้วเนื้อร้องไม่ตามห้อง:\n' + src.value);
+    btn('tidy').onclick();
+    if (src.value !== want) die('จัดระเบียบซ้ำแล้วเนื้อที่มีเว้นวรรคแตกห้อง:\n' + src.value);
     doc.querySelector('#perLine').value = '8';
-    ok('เนื้อร้อง — ขยับคีย์ไม่โดน · จัดระเบียบแล้วตามห้องไป');
+    ok('เนื้อร้อง — ขยับคีย์ไม่โดน · จัดระเบียบแล้วตามห้องไป · เว้นวรรคในห้องด้วย | อยู่ครบ');
   }
 
   // จุดเริ่มเล่น + พัก/เล่นต่อ

@@ -428,8 +428,9 @@ details[open] summary{margin-bottom:12px}
             <li><code>0</code> หยุดเสียง (ตัดเสียงที่ค้างอยู่)</li>
             <li><code>//</code> หรือ <code>#</code> ท้ายบรรทัด = คำอธิบาย ไม่ถูกเล่น</li>
             <li><code>"</code> ขึ้นต้นบรรทัด = <b>เนื้อร้อง</b>ของบรรทัดโน้ตข้างบน คำละห้องตามเว้นวรรค ห้องที่ไม่มีเนื้อใส่ <code>-</code> มีหลายท่อนก็ใส่หลายบรรทัด</li>
+            <li>อยากเว้นวรรคในห้อง ให้คั่นห้องด้วย <code>|</code> แทน — บรรทัดเนื้อที่มี <code>|</code> จะแบ่งห้องด้วย <code>|</code> อย่างเดียว</li>
           </ul>
-          <p class="note">ตัวอย่าง<br><code>ดรมฟ ซลทดํ ดํทลซ ฟมรด</code><br><code>" ลมพัด - เย็นฉ่ำ ใจ</code></p>
+          <p class="note">ตัวอย่าง<br><code>ดรมฟ ซลทดํ ดํทลซ ฟมรด</code><br><code>" ลมพัด - เย็นฉ่ำ ใจ</code><br><code>" ลม พัด | - | เย็น ฉ่ำ | ใจ</code></p>
         </div>
         <div>
           <h3>การจัดห้องและบรรทัด</h3>
@@ -509,9 +510,11 @@ const LYR = /^\s*["“”]/;
 const lyricText = body => body.replace(LYR,'').replace(/["“”]\s*$/,'');
 
 // แบ่งเนื้อร้องให้ห้องละคำตามเว้นวรรค - = ห้องที่ไม่มีเนื้อ
+// ถ้าบรรทัดมี | ให้แบ่งด้วย | อย่างเดียว เว้นวรรคจะอยู่ในห้องเดียวกัน
 // คำที่เกินจำนวนห้องไปต่อท้ายห้องสุดท้าย ไม่ให้หายไปเงียบ ๆ
 function addLyrics(cells, text){
-  const w = text.split(/[\s|]+/).filter(Boolean);
+  const w = text.split(text.includes('|') ? '|' : /\s+/)
+    .map(s => s.trim().replace(/\s+/g,' ')).filter(Boolean);
   cells.forEach((c,i)=>{
     const t = i < cells.length-1 ? (w[i]||'') : w.slice(i).join(' ');
     (c.lyr || (c.lyr=[])).push(/^[-–—]+$/.test(t) ? '' : t);
@@ -947,12 +950,12 @@ function render(){
         foot.innerHTML = ks.includes('chap')  ? '<span class="chap">ฉับ</span>'
                        : ks.includes('ching') ? 'ฉิ่ง' : '';
       }
-      c.appendChild(slots);
+      c.appendChild(foot); c.appendChild(slots);
       for(const t of cell.lyr||[]){
         const l=document.createElement('div'); l.className='lyr'; l.textContent=t;
         c.appendChild(l);
       }
-      c.appendChild(foot); wrap.appendChild(c);
+      wrap.appendChild(c);
       ci++;
     });
     line.appendChild(num); line.appendChild(wrap); scoreEl.appendChild(line);
@@ -1101,7 +1104,13 @@ function tidy(){
       lyr.push(w);
     }
     while(lyr.length && !lyr[lyr.length-1].length) lyr.pop();
-    for(const w of lyr) out.push('" ' + (w.length ? w.join(' ') : '-'));
+    for(const w of lyr){
+      // มีเว้นวรรคในห้องเมื่อไรต้องคั่นด้วย | ห้องเดียวก็ต้องมี | ไม่งั้นอ่านกลับเป็นหลายห้อง
+      const t = !w.length ? '-'
+              : w.some(x => x.includes(' ')) ? w.join(' | ') + (w.length===1 ? ' |' : '')
+              : w.join(' ');
+      out.push('" ' + t);
+    }
   }
   // บรรทัดที่มีแต่คำอธิบาย ไม่มีโน้ต — เก็บไว้ท้ายไฟล์ ไม่ให้หาย
   const orphan = notes.filter((c,li)=> c && lastOf[li]===undefined);
@@ -1371,7 +1380,7 @@ async function exportWav(){
     $('#volV').textContent=e.target.value;
     if(graph) graph.master.gain.setTargetAtTime(+e.target.value/100, ac.currentTime, .02);
   };
-  // เปลี่ยนป้ายฉิ่งใต้ห้อง จึงต้องวาดใหม่
+  // เปลี่ยนป้ายฉิ่งเหนือห้อง จึงต้องวาดใหม่
   ['#chan','#ching'].forEach(s=>{ $(s).addEventListener('change',render); });
 
   // ทาง / คีย์ / เสียงอ้างอิง — ตัวตั้งคิวอ่านค่าเอง แค่อัปเดตตัวเลขที่แสดง
