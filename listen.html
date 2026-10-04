@@ -219,6 +219,7 @@ details[open] summary{margin-bottom:12px}
     <a href="thai.html">โน้ตไทย</a>
     <a href="khlui.html">ขลุ่ย</a>
     <a href="backing.html">ดนตรีคลอ</a>
+    <a href="guide.html">คู่มือ</a>
     <a href="listen.html" class="on">แกะโน้ต</a>
   </nav>
   <div class="bar">
@@ -1153,6 +1154,9 @@ function doSave(){
 }
 
 function init(){
+  // แท็บหน้านี้อยู่ท้ายสุด บนมือถือแถบแท็บล้นจอ เลื่อนให้เห็นแท็บที่เปิดอยู่
+  const nav = document.querySelector('.pages');
+  if(nav) nav.scrollLeft = nav.scrollWidth;
   fillKeySelect();
   gridNote();
   $('#tempoNote').textContent = '';

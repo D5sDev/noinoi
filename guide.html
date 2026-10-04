@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoiNoi — คู่มือวิธีเขียนโน้ต</title>
+<meta name="description" content="วิธีเขียนโน้ตไทยในหน้าโน้ตไทยและขลุ่ยของ NoiNoi ตัวโน้ต ห้อง เนื้อร้อง แก้ในตาราง ลูกสะบัด เสียงควง">
+<style>
+:root{
+  --bg:#14110d; --bg2:#1c1813; --line:#3a3025; --line2:#4d3f2e;
+  --fg:#f2e9db; --dim:#a2937d; --gold:#e0b24d; --gold-dim:#8a6d2c;
+  --red:#c8553d; --slot:#241f18; --ink:#100e0a;
+  --head:62px;                       /* ความสูงหัวเรื่องที่หนึบอยู่ เผื่อตอนกระโดดไปหัวข้อ */
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+@media (prefers-reduced-motion:no-preference){ html{scroll-behavior:smooth} }
+body{
+  background:
+    radial-gradient(900px 500px at 12% -10%, #2a2118 0%, transparent 60%),
+    radial-gradient(700px 400px at 100% 0%, #241d2a 0%, transparent 55%),
+    var(--bg);
+  color:var(--fg);
+  font-family:'Sarabun','Noto Sans Thai','Leelawadee UI','Segoe UI',system-ui,sans-serif;
+  font-size:15.5px; line-height:1.75; min-height:100vh;
+}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:.2px}
+p{margin:0}
+a{color:var(--gold)}
+
+/* หัวเรื่อง — แบบเดียวกับหน้าเล่นโน้ต */
+.top{
+  position:sticky; top:0; z-index:20;
+  display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
+  padding:12px 20px; background:rgba(20,17,13,.88); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;
+  border-radius:12px;background:linear-gradient(145deg,var(--gold),#a97f27);
+  color:#20180a;font-size:21px;font-weight:700;
+  box-shadow:0 3px 14px rgba(224,178,77,.28);
+}
+.brand h1{font-size:19px;line-height:1.1}
+.brand p{font-size:12.5px;color:var(--dim);line-height:1.4}
+.pages{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.pages a{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:7px 15px;border-radius:7px;transition:.14s;line-height:1.55}
+.pages a:hover{color:var(--fg);background:#241e17}
+.pages a.on{background:linear-gradient(145deg,var(--gold),#bd8f30);color:#1d1608}
+
+/* โครงหน้า: สารบัญติดข้าง + เนื้อหา */
+.page{
+  max-width:1080px;margin:0 auto;padding:34px 22px 80px;
+  display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px;align-items:start;
+}
+.toc{position:sticky;top:calc(var(--head) + 26px)}
+.toc b{display:block;font-size:12.5px;color:var(--dim);font-weight:600;margin-bottom:8px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
+.toc a{
+  display:block;padding:5px 0 5px 14px;margin-left:-1px;border-left:2px solid transparent;
+  color:var(--dim);text-decoration:none;font-size:14px;line-height:1.5;transition:color .15s,border-color .15s;
+}
+.toc a:hover{color:var(--fg)}
+.toc a[aria-current="true"]{color:var(--gold);border-left-color:var(--gold)}
+
+article{max-width:46rem}                 /* กว้างพอให้ตัวอย่าง 4 ห้องอยู่แถวเดียว */
+article p{max-width:68ch}
+.intro h2{font-size:27px;line-height:1.3;text-wrap:balance}
+.intro p{color:var(--dim);margin-top:10px}
+
+/* ตัวโน้ต 7 ตัวเรียงเป็นแถบบันไดเสียง */
+.scale{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px}
+.scale div{
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 10px;
+  border:1px solid var(--line);border-radius:10px;background:rgba(16,14,10,.55);
+}
+.scale b{font-size:27px;line-height:1.25;color:var(--gold)}
+.scale span{font-size:13.5px;color:var(--dim);line-height:1.3}
+.scale code{font-size:13px;margin-top:2px}
+section{padding-top:44px;scroll-margin-top:calc(var(--head) + 6px)}
+section + section{margin-top:8px;border-top:1px solid var(--line)}
+section h2{font-size:21px;line-height:1.35;margin-bottom:12px;text-wrap:balance}
+section h3{font-size:15.5px;margin:26px 0 8px;color:var(--fg)}
+section p + p{margin-top:10px}
+section ul{margin:10px 0 0;padding-left:20px}
+section li{margin:5px 0}
+.muted{color:var(--dim)}
+
+code,kbd{
+  font-family:'Sarabun','Noto Sans Thai',ui-monospace,monospace;
+  background:var(--ink);border:1px solid var(--line);border-radius:5px;padding:0 6px;
+  font-size:1.08em;white-space:nowrap;
+}
+kbd{border-bottom-width:2px;font-size:.92em;padding:1px 7px;color:var(--fg)}
+
+/* ตารางสัญลักษณ์ */
+.sym{width:100%;border-collapse:collapse;margin-top:14px}
+.sym th{text-align:left;font-size:12.5px;font-weight:600;color:var(--dim);padding:0 10px 6px 0;border-bottom:1px solid var(--line2)}
+.sym td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.sym td:first-child{width:118px;white-space:nowrap;color:var(--gold);font-size:19px;line-height:1.5}
+.sym td:first-child code{font-size:inherit;color:inherit}
+
+/* ตัวอย่าง: เขียนแบบนี้ → บนจอเป็นแบบนี้ */
+.ex{
+  margin-top:18px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  background:rgba(16,14,10,.55);
+}
+.ex .src{
+  margin:0;padding:14px 16px;background:var(--ink);border-bottom:1px solid var(--line);
+  font-family:'Sarabun','Noto Sans Thai',ui-monospace,monospace;font-size:19px;line-height:1.9;letter-spacing:1px;
+  white-space:pre;overflow-x:auto;
+}
+.ex .cap{display:block;font-family:inherit;font-size:12px;letter-spacing:0;color:var(--dim);line-height:1.4;margin-bottom:4px}
+.ex .out{padding:14px 16px 16px;overflow-x:auto}
+.ex .out .cap{margin-bottom:10px}
+
+/* ห้องโน้ตย่อ — ใช้หน้าตาเดียวกับบรรทัดโน้ตในหน้าเล่น */
+.cells{display:flex;gap:6px;flex-wrap:wrap}
+.cell{
+  border:1px solid var(--line);border-radius:8px;background:rgba(16,14,10,.6);
+  padding:4px;display:flex;flex-direction:column;gap:3px;
+}
+.slots,.lyr{display:flex;gap:3px}
+.slot{
+  width:34px;height:38px;display:grid;place-items:center;
+  background:var(--slot);border-radius:5px;font-size:19px;line-height:1;
+}
+.slot.tie{color:#6b5c46;font-size:15px}
+.slot.rest{color:#7a5b52}
+.slot.grp{font-size:12.5px;letter-spacing:-.5px;color:var(--gold)}
+.kh{font-style:normal;font-size:10px;color:var(--gold);vertical-align:super;margin-left:1px}
+.lyr span{width:34px;text-align:center;font-size:14px;line-height:1.45;min-height:1.45em;white-space:nowrap;color:#d8cbb6}
+.foot{height:15px;display:flex;justify-content:flex-end;font-size:10.5px;line-height:15px;color:var(--gold-dim);padding-right:3px}
+.foot .chap{color:var(--red)}
+
+/* แนะนำ / ข้อควรรู้ */
+.tip{margin-top:16px;padding:12px 16px;border-radius:10px;background:rgba(224,178,77,.08);border:1px solid rgba(224,178,77,.22)}
+.tip b{color:var(--gold)}
+
+dl{margin:14px 0 0}
+dt{font-weight:700;margin-top:16px}
+dd{margin:4px 0 0;color:var(--dim)}
+dd b{color:var(--fg);font-weight:600}
+
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--dim);display:flex;gap:18px;flex-wrap:wrap}
+footer a{text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+@media(max-width:860px){
+  .page{grid-template-columns:1fr;gap:0;padding-top:20px}
+  /* สารบัญกลายเป็นแถบชิปเลื่อนข้างได้ ไม่หนึบ จะได้ไม่กินที่อ่าน */
+  .toc{position:static;margin:0 -22px;padding:0 22px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .toc::-webkit-scrollbar{display:none}
+  .toc b{display:none}
+  .toc ol{display:flex;gap:6px;border:0;width:max-content}
+  .toc a{
+    border:1px solid var(--line);border-radius:999px;margin:0;padding:5px 13px;white-space:nowrap;
+    background:var(--bg2);font-size:13px;
+  }
+  .toc a[aria-current="true"]{border-color:var(--gold-dim);background:#2a2216}
+  article{max-width:none;margin-top:22px}
+}
+
+@media(max-width:640px){
+  :root{--head:96px}
+  body{font-size:15px}
+  .top{padding:9px 13px;gap:8px 10px;backdrop-filter:none;background:rgba(20,17,13,.97)}
+  .top .brand{flex:0 1 auto;min-width:0;overflow:hidden}
+  .brand{gap:9px}
+  .brand h1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand p{display:none}
+  .logo{width:34px;height:34px;flex-basis:34px;font-size:18px;border-radius:10px}
+  .pages{flex:0 1 auto;min-width:0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pages::-webkit-scrollbar{display:none}
+  .pages a{padding:7px 12px;font-size:12.5px;white-space:nowrap}
+  .page{padding:16px 16px 60px}
+  .toc{margin:0 -16px;padding:0 16px 4px}
+  .intro h2{font-size:23px}
+  section{padding-top:34px}
+  section h2{font-size:19px}
+  .sym td:first-child{width:92px;font-size:17px}
+  .scale{gap:4px}
+  .scale div{padding:8px 2px}
+  .scale b{font-size:22px}
+  .scale span{font-size:12px}
+  .scale code{font-size:12px;padding:0 4px}
+  .ex .src{font-size:17px;padding:12px 14px}
+  .ex .out{padding:12px 14px 14px}
+  .slot{width:30px;height:34px;font-size:17px}
+  .lyr span{width:30px;font-size:13px}
+  .cells{gap:5px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">♪</div>
+    <div>
+      <h1>NoiNoi</h1>
+      <p>คู่มือวิธีเขียนโน้ต</p>
+    </div>
+  </div>
+  <nav class="pages">
+    <a href="index.html">หน้าแรก</a>
+    <a href="thai.html">โน้ตไทย</a>
+    <a href="khlui.html">ขลุ่ย</a>
+    <a href="backing.html">ดนตรีคลอ</a>
+    <a href="guide.html" class="on" aria-current="page">คู่มือ</a>
+  </nav>
+</header>
+
+<div class="page">
+  <nav class="toc" aria-label="สารบัญ">
+    <b>ในหน้านี้</b>
+    <ol>
+      <li><a href="#notes">ตัวโน้ต</a></li>
+      <li><a href="#cells">ห้องและบรรทัด</a></li>
+      <li><a href="#lyrics">เนื้อร้อง</a></li>
+      <li><a href="#grid">แก้ในตาราง</a></li>
+      <li><a href="#khlui">เฉพาะหน้าขลุ่ย</a></li>
+      <li><a href="#sound">เสียงและจังหวะ</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <div class="intro">
+      <h2>วิธีเขียนโน้ต</h2>
+      <p>ใช้ได้ทั้งหน้า <a href="thai.html">โน้ตไทย</a> และ <a href="khlui.html">ขลุ่ย</a>
+        พิมพ์ในช่องโน้ตด้านบน หรือกด <b>✎ แก้ในตาราง</b> แล้วพิมพ์ลงบรรทัดโน้ตตรง ๆ ก็ได้</p>
+    </div>
+
+    <section id="notes">
+      <h2>ตัวโน้ต</h2>
+      <p>ตัวโน้ตไทย 7 ตัว พิมพ์ด้วยอักษรไทย หรือพิมพ์อักษรอังกฤษตัวล่างก็ได้</p>
+      <div class="scale">
+        <div><b>ด</b><span>โด</span><code>d</code></div>
+        <div><b>ร</b><span>เร</span><code>r</code></div>
+        <div><b>ม</b><span>มี</span><code>m</code></div>
+        <div><b>ฟ</b><span>ฟา</span><code>f</code></div>
+        <div><b>ซ</b><span>ซอล</span><code>s</code></div>
+        <div><b>ล</b><span>ลา</span><code>l</code></div>
+        <div><b>ท</b><span>ที</span><code>t</code></div>
+      </div>
+
+      <h3>เสียงสูง เสียงต่ำ</h3>
+      <table class="sym">
+        <tbody>
+          <tr><td>ดํ</td><td>นิคหิตข้างบน สูงขึ้น 1 คู่แปด · พิมพ์ <code>d'</code> ก็ได้</td></tr>
+          <tr><td>ดฺ</td><td>พินทุข้างล่าง ต่ำลง 1 คู่แปด · พิมพ์ <code>d,</code> ก็ได้</td></tr>
+          <tr><td>ดํํ</td><td>ใส่ซ้ำได้ สูงขึ้น 2 คู่แปด</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="cells">
+      <h2>ห้องและบรรทัด</h2>
+      <p>ตัวที่เขียนติดกันคือ 1 ห้อง เว้นวรรคเพื่อขึ้นห้องใหม่ ขึ้นบรรทัดเพื่อขึ้นบรรทัดโน้ตใหม่ นิยมบรรทัดละ 8 ห้อง
+        ทุกห้องยาวเท่ากันเสมอ จะใส่ 1, 2 หรือ 4 ตัวก็ได้ ระบบแบ่งเวลาในห้องให้เอง</p>
+      <table class="sym">
+        <tbody>
+          <tr><td><code>-</code></td><td>ยืดเสียงตัวก่อนหน้าต่อไปอีกหนึ่งช่อง</td></tr>
+          <tr><td><code>0</code></td><td>หยุดเสียง ตัดเสียงที่ค้างอยู่</td></tr>
+          <tr><td>เว้นวรรค <code>|</code></td><td>ขึ้นห้องใหม่</td></tr>
+          <tr><td><code>//</code> <code>#</code></td><td>คำอธิบายท้ายบรรทัด ไม่ถูกเล่น</td></tr>
+        </tbody>
+      </table>
+
+      <div class="ex">
+        <pre class="src"><span class="cap">เขียนแบบนี้</span>ดรมฟ ซ-ลท ด--- 0ดํ--</pre>
+        <div class="out">
+          <span class="cap">บนจอเป็นแบบนี้</span>
+          <div class="cells">
+            <div class="cell"><div class="foot">ฉิ่ง</div><div class="slots"><div class="slot">ด</div><div class="slot">ร</div><div class="slot">ม</div><div class="slot">ฟ</div></div></div>
+            <div class="cell"><div class="foot"><span class="chap">ฉับ</span></div><div class="slots"><div class="slot">ซ</div><div class="slot tie">–</div><div class="slot">ล</div><div class="slot">ท</div></div></div>
+            <div class="cell"><div class="foot">ฉิ่ง</div><div class="slots"><div class="slot">ด</div><div class="slot tie">–</div><div class="slot tie">–</div><div class="slot tie">–</div></div></div>
+            <div class="cell"><div class="foot"><span class="chap">ฉับ</span></div><div class="slots"><div class="slot rest">๐</div><div class="slot">ดํ</div><div class="slot tie">–</div><div class="slot tie">–</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>จัดระเบียบโน้ต</h3>
+      <p>ปุ่ม <b>⌗ จัดระเบียบโน้ต</b> จัดห้องลงบรรทัดใหม่ตามจำนวนห้องต่อบรรทัดที่ตั้งไว้
+        และขยายห้องที่มี 1 หรือ 2 ตัวให้ครบ 4 ช่องโดยเสียงไม่เปลี่ยน คำอธิบายกับเนื้อร้องตามห้องของมันไปด้วย</p>
+
+      <h3>ขึ้นด้วย ▲ ▼ กับ ทาง / คีย์</h3>
+      <p><b>ขึ้นด้วย</b> และปุ่ม ▲ ▼ เขียนโน้ตใหม่ทั้งเพลงขึ้นหรือลงทีละขั้น เพลงที่ขึ้นด้วย <code>ซ</code> เลือก <code>ล</code>
+        จะกลายเป็นโน้ตของ ล ทั้งเพลง เลย <code>ท</code> แล้วขึ้นคู่แปดให้เอง คำอธิบายและเนื้อร้องไม่ถูกแตะ</p>
+      <p><b>ทาง / คีย์</b> ในแผงตั้งค่าเปลี่ยนแค่เสียงที่ได้ยิน ตัวโน้ตบนจอเหมือนเดิม
+        ใช้ ▲ ▼ เมื่ออยากได้โน้ตที่อ่านตรงกับนิ้วที่จับ ใช้ทาง / คีย์ เมื่ออยากเปลี่ยนแค่ระดับเสียง</p>
+    </section>
+
+    <section id="lyrics">
+      <h2>เนื้อร้อง</h2>
+      <p>เขียนเนื้อร้องในบรรทัดถัดจากบรรทัดโน้ต ขึ้นต้นด้วย <code>"</code> เนื้อจะไปอยู่ใต้บรรทัดโน้ตข้างบน
+        มีหลายท่อนก็เขียนหลายบรรทัดซ้อนกัน</p>
+
+      <h3>คั่นห้องด้วย | ให้คำตรงโน้ต</h3>
+      <p>ใช้ <code>|</code> คั่นห้อง คำในห้องเดียวกันเว้นวรรคแยก แต่ละคำจะลงใต้โน้ตในห้องนั้นทีละตัว
+        ช่อง <code>-</code> กับ <code>0</code> ข้ามให้เอง</p>
+      <div class="ex">
+        <pre class="src"><span class="cap">เขียนแบบนี้</span>ดรมฟ ซ-ลท ดํ--- ----
+" ลม พัด เย็น ฉ่ำ | ใจ _ ละ | ไกล</pre>
+        <div class="out">
+          <span class="cap">บนจอเป็นแบบนี้</span>
+          <div class="cells">
+            <div class="cell"><div class="slots"><div class="slot">ด</div><div class="slot">ร</div><div class="slot">ม</div><div class="slot">ฟ</div></div><div class="lyr"><span>ลม</span><span>พัด</span><span>เย็น</span><span>ฉ่ำ</span></div></div>
+            <div class="cell"><div class="slots"><div class="slot">ซ</div><div class="slot tie">–</div><div class="slot">ล</div><div class="slot">ท</div></div><div class="lyr"><span>ใจ</span><span></span><span></span><span>ละ</span></div></div>
+            <div class="cell"><div class="slots"><div class="slot">ดํ</div><div class="slot tie">–</div><div class="slot tie">–</div><div class="slot tie">–</div></div><div class="lyr"><span>ไกล</span><span></span><span></span><span></span></div></div>
+            <div class="cell"><div class="slots"><div class="slot tie">–</div><div class="slot tie">–</div><div class="slot tie">–</div><div class="slot tie">–</div></div><div class="lyr"><span></span><span></span><span></span><span></span></div></div>
+          </div>
+        </div>
+      </div>
+      <table class="sym">
+        <tbody>
+          <tr><td><code>_</code></td><td>โน้ตตัวนี้ไม่มีคำ เช่นตอนเอื้อน</td></tr>
+          <tr><td><code>||</code></td><td>ห้องว่างทั้งห้อง ใส่ <code>| - |</code> ก็ได้</td></tr>
+          <tr><td>คำเกิน</td><td>คำที่เกินจำนวนโน้ตในห้อง ไปรวมใต้โน้ตตัวสุดท้ายของห้องนั้น ไม่ลามไปห้องอื่น</td></tr>
+        </tbody>
+      </table>
+
+      <h3>แบบอื่น</h3>
+      <table class="sym">
+        <tbody>
+          <tr><td><code>""</code></td><td>พยางค์ละโน้ตไล่ไปทั้งบรรทัด ไม่ต้องคั่นห้อง เว้นวรรคแยกพยางค์ <code>_</code> = โน้ตไม่มีคำ
+            <div class="muted">ได้ผลเท่ากับแบบ | แต่ถ้าพิมพ์ขาดหรือเกินตรงไหน คำหลังจากนั้นจะเลื่อนทั้งบรรทัด</div></td></tr>
+          <tr><td><code>"</code> ไม่มี <code>|</code></td><td>ห้องละคำ เว้นวรรคแบ่งห้อง คำอยู่กลางห้อง ไม่ตรงโน้ตตัวไหน ห้องที่ไม่มีเนื้อใส่ <code>-</code></td></tr>
+        </tbody>
+      </table>
+      <p class="tip">ตอนเล่น คำของโน้ตที่กำลังดังจะเปลี่ยนเป็นสีทอง พยางค์ยาวจะขยายช่องโน้ตให้กว้างขึ้นเอง</p>
+    </section>
+
+    <section id="grid">
+      <h2>แก้ในตาราง</h2>
+      <p>กด <b>✎ แก้ในตาราง</b> ที่หัวบรรทัดโน้ต แล้วแตะช่องที่จะแก้ พิมพ์ทับได้เลย
+        แป้นโน้ตจะย้ายมาเกาะล่างจอ ไม่ต้องเลื่อนขึ้นไปหาช่องพิมพ์ ทุกอย่างที่แก้เขียนกลับลงช่องพิมพ์ด้านบนให้</p>
+      <table class="sym">
+        <thead><tr><th>กด</th><th>ทำอะไร</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>ด</kbd>…<kbd>ท</kbd></td><td>เขียนทับช่องที่เลือก แล้วเลื่อนไปช่องถัดไป</td></tr>
+          <tr><td><kbd>-</kbd> <kbd>0</kbd></td><td>ยืดเสียง หยุดเสียง ใช้แป้นไทยอยู่ก็กดปุ่มเดิมได้ ไม่ต้องสลับภาษา</td></tr>
+          <tr><td><kbd>ํ</kbd> <kbd>ฺ</kbd></td><td>ขึ้นหรือลงคู่แปดให้ตัวที่เพิ่งพิมพ์ เหมือนพิมพ์ ด แล้วตามด้วย ํ</td></tr>
+          <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td><td>เลื่อนช่อง เลื่อนบรรทัด</td></tr>
+          <tr><td><kbd>เว้นวรรค</kbd></td><td>ไปห้องถัดไป ถ้าเพิ่งพิมพ์ครบห้องพอดีจะอยู่ที่เดิม</td></tr>
+          <tr><td><kbd>Enter</kbd></td><td>ไปบรรทัดถัดไป</td></tr>
+          <tr><td><kbd>Backspace</kbd></td><td>ล้างช่องก่อนหน้าเป็น <code>-</code></td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd></td><td>ย้อนการแก้ในตาราง ปุ่ม ↶ บนแป้นก็ได้</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>เลิกเลือกช่อง เว้นวรรคกลับไปเป็นปุ่มเล่น/พัก</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px">ช่อง <b>+</b> ท้ายเพลง พิมพ์ตรงนั้นแล้วต่อห้องใหม่ให้ บรรทัดเต็มแล้วขึ้นบรรทัดใหม่เอง
+        ช่องที่แตะเลือกจะเป็นจุดเริ่มเล่นด้วย กดเล่นแล้วได้ฟังจากตรงที่แก้</p>
+
+      <h3>พิมพ์เนื้อร้อง</h3>
+      <p>แตะใต้โน้ตตัวไหนก็ได้ จะมีช่องพิมพ์ขึ้นตรงนั้น เว้นวรรคหรือ <kbd>Enter</kbd> ไปโน้ตถัดไป
+        <kbd>Backspace</kbd> ตอนช่องว่างกลับโน้ตก่อนหน้า <kbd>Esc</kbd> ปิด
+        วางทั้งวลีทีเดียวคำจะกระจายลงทีละโน้ต บรรทัดที่ยังไม่มีเนื้อมีแถวเส้นประให้แตะ แล้วได้บรรทัด <code>" … | …</code> ให้เอง</p>
+    </section>
+
+    <section id="khlui">
+      <h2>เฉพาะหน้าขลุ่ย</h2>
+      <table class="sym">
+        <tbody>
+          <tr><td><code>(ดรม)</code></td><td><b>ลูกสะบัด</b> โน้ตในวงเล็บซอยเวลากันเองอยู่ในช่องเดียว ใส่กี่ตัวก็ได้ ห้ามเว้นวรรคในวงเล็บ</td></tr>
+          <tr><td><code>ซ*</code></td><td><b>เสียงควง</b> ความถี่เดิม แต่จับอีกแบบ เสียงทึบกว่าและลมน้อยกว่า ใช้เก็บเสียงหรือเชื่อมเสียงให้นุ่ม</td></tr>
+        </tbody>
+      </table>
+      <div class="ex">
+        <pre class="src"><span class="cap">เขียนแบบนี้</span>-ซ-ล (ซลท)--- -ท*-- ท---</pre>
+        <div class="out">
+          <span class="cap">บนจอเป็นแบบนี้</span>
+          <div class="cells">
+            <div class="cell"><div class="slots"><div class="slot tie">–</div><div class="slot">ซ</div><div class="slot tie">–</div><div class="slot">ล</div></div></div>
+            <div class="cell"><div class="slots"><div class="slot grp">ซลท</div><div class="slot tie">–</div><div class="slot tie">–</div><div class="slot tie">–</div></div></div>
+            <div class="cell"><div class="slots"><div class="slot tie">–</div><div class="slot">ท<i class="kh">*</i></div><div class="slot tie">–</div><div class="slot tie">–</div></div></div>
+            <div class="cell"><div class="slots"><div class="slot">ท</div><div class="slot tie">–</div><div class="slot tie">–</div><div class="slot tie">–</div></div></div>
+          </div>
+        </div>
+      </div>
+      <ul>
+        <li>ปุ่มจัดระเบียบไม่ขยายห้องที่มีลูกสะบัด เพราะจะเปลี่ยนการซอยเสียงในวงเล็บ</li>
+        <li>แก้ในตารางพิมพ์ลูกสะบัดไม่ได้ พิมพ์ทับช่องลูกสะบัดจะกลายเป็นโน้ตตัวเดียว ใช้ช่องพิมพ์ด้านบนแทน ส่วนเสียงควงกด <kbd>*</kbd> หรือปุ่ม <b>ควง *</b> ได้</li>
+        <li>ความถี่ที่แสดงคือเสียง <code>ด</code> ของขลุ่ยที่ได้ยินจริง ซึ่งสูงกว่าเสียงอ้างอิง 1 คู่แปด</li>
+      </ul>
+
+      <h3>เสียงขลุ่ย</h3>
+      <p>ใช้เสียงอัดจากขลุ่ยจริง เลือกชุดให้เองตามชนิดคีย์ บรรทัดใต้ช่องคีย์บอกว่ากำลังใช้ชุดไหนอยู่</p>
+      <table class="sym">
+        <tbody>
+          <tr><td>ทางไทย</td><td>ขลุ่ยเพียงออ 12 ขั้น (459–1349 Hz) เสียงเท่า 7 เสียงจริง</td></tr>
+          <tr><td>คีย์สากล</td><td>ขลุ่ยคีย์ซี 14 ขั้น (534–1999 Hz) บันไดเมเจอร์ครบ 2 คู่แปด</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:12px" class="muted">โน้ตที่สูงเกินช่วงที่อัดไว้ต้องยืดตัวอย่างขึ้นเท่าตัว เสียงจะสว่างกว่าปกติ
+        ระบบลดระดับและกรองความสูงลงชดเชยให้แล้ว แต่ยังไม่เท่าของจริง</p>
+    </section>
+
+    <section id="sound">
+      <h2>เสียงและจังหวะ</h2>
+      <dl>
+        <dt>เสียงเท่า 7 เสียง</dt>
+        <dd>แบ่งคู่แปดเป็น 7 ขั้นเท่ากัน ขั้นละ 171.43 เซนต์ ตามระบบเสียงดนตรีไทย
+          ต่างจากเปียโนที่ ม–ฟ และ ท–ดํ ห่างแค่ครึ่งเสียง เลือก <b>เทียบเปียโน (12-TET)</b> ได้ในช่องระบบเสียง</dd>
+        <dt>ทาง / คีย์</dt>
+        <dd>กำหนดว่าตัว <code>ด</code> ไปตกที่เสียงใด โน้ตที่เขียนไว้ไม่เปลี่ยน
+          <b>ทางไทย</b> ขยับทีละ 1/7 คู่แปด อ้างอิงจาก ด ของทางเพียงออล่าง ·
+          <b>คีย์สากล</b> ขยับทีละครึ่งเสียง อ้างอิงจาก A4
+          เป็นคนละเรื่องกับระบบเสียงซึ่งกำหนดระยะห่างของอีก 6 เสียง จึงเลือกคีย์สากลแต่ยังใช้เสียงเท่า 7 เสียงได้</dd>
+        <dt>ความถี่ที่แสดง</dt>
+        <dd>คือเสียง <code>ด</code> ที่ได้ยินจริง รวมช่วงเสียงของเครื่องแล้ว
+          ระนาดเอก ขลุ่ย ซอ สูงขึ้น 1 คู่แปด · ระนาดทุ้มต่ำลง 1 คู่แปด · ฆ้องวงใหญ่และจะเข้อยู่ระดับเดียวกับเสียงอ้างอิง</dd>
+        <dt>ฉิ่ง–ฉับ</dt>
+        <dd>ลงท้ายห้อง <b>ชั้นเดียว</b> ฉิ่งกลางห้อง ฉับท้ายห้อง ·
+          <b>สองชั้น</b> ฉิ่งห้องคี่ ฉับห้องคู่ · <b>สามชั้น</b> ห่างออกไปอีกเท่าตัว
+          ป้ายฉิ่งกับฉับแสดงอยู่มุมบนของแต่ละห้อง</dd>
+      </dl>
+    </section>
+
+    <footer>
+      <a href="thai.html">เปิดหน้าโน้ตไทย</a>
+      <a href="khlui.html">เปิดหน้าขลุ่ย</a>
+      <a href="https://github.com/D5sDev/noinoi">ซอร์สโค้ดบน GitHub</a>
+    </footer>
+  </article>
+</div>
+
+<script>
+// สารบัญติดสีหัวข้อที่กำลังอ่าน — ไม่มี IntersectionObserver ก็แค่ไม่ติดสี
+(() => {
+  const links = [...document.querySelectorAll('.toc a')];
+  const secs = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  if(!('IntersectionObserver' in window) || !secs.length) return;
+  const mark = id => links.forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+  const io = new IntersectionObserver(entries => {
+    const vis = entries.filter(e => e.isIntersecting).sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    if(vis.length) mark(vis[0].target.id);
+  }, {rootMargin:'-20% 0px -65% 0px'});
+  secs.forEach(s => io.observe(s));
+  mark(secs[0].id);
+})();
+</script>
+</body>
+</html>
