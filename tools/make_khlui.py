@@ -50,8 +50,7 @@ rep(u"""function tokenizeCell(str){
     const ch=str[i], at=i;
     if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie',at,len:1}); continue; }
     if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest',at,len:1}); continue; }
-    let deg=NOTE.indexOf(ch);
-    if(deg<0) deg=ASCII.indexOf(ch.toLowerCase());
+    const deg=noteDeg(ch);
     if(deg<0) continue;                     // ข้ามอักขระที่ไม่รู้จัก
     let oct=0;
     while(i+1<str.length){
@@ -78,8 +77,7 @@ u"""function tokenizeCell(str){
     if(ch===')') continue;
     if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie',at,len:1}); continue; }
     if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest',at,len:1}); continue; }
-    let deg=NOTE.indexOf(ch);
-    if(deg<0) deg=ASCII.indexOf(ch.toLowerCase());
+    const deg=noteDeg(ch);
     if(deg<0) continue;                     // ข้ามอักขระที่ไม่รู้จัก
     let oct=0, kh=false;
     while(i+1<str.length){

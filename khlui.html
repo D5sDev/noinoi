@@ -456,6 +456,13 @@ const $ = s => document.querySelector(s);
 /* ══════════ 1. ระบบโน้ตไทย ══════════ */
 const NOTE   = ['ด','ร','ม','ฟ','ซ','ล','ท'];
 const ASCII  = 'drmfslt';
+const DIGIT  = ['1234567','๑๒๓๔๕๖๗'];   // โน้ตตัวเลข 1 = ด … 7 = ท
+const noteDeg = ch => {
+  let d = NOTE.indexOf(ch);
+  if(d<0) d = ASCII.indexOf(ch.toLowerCase());
+  for(const s of DIGIT) if(d<0) d = s.indexOf(ch);
+  return d;
+};
 const UP     = 'ํ';   // นิคหิต  = สูงขึ้น 1 คู่แปด
 const DOWN   = 'ฺ';   // พินทุ   = ต่ำลง 1 คู่แปด
 const SEMI   = [0,2,4,5,7,9,11];   // ใช้เมื่อเทียบเปียโน
@@ -478,8 +485,7 @@ function tokenizeCell(str){
     if(ch===')') continue;
     if(ch==='-'||ch==='–'||ch==='—'||ch==='.'){ out.push({type:'tie',at,len:1}); continue; }
     if(ch==='0'||ch==='๐'||ch==='o'||ch==='O'){ out.push({type:'rest',at,len:1}); continue; }
-    let deg=NOTE.indexOf(ch);
-    if(deg<0) deg=ASCII.indexOf(ch.toLowerCase());
+    const deg=noteDeg(ch);
     if(deg<0) continue;                     // ข้ามอักขระที่ไม่รู้จัก
     let oct=0, kh=false;
     while(i+1<str.length){
@@ -1223,9 +1229,10 @@ document.addEventListener('keydown', e => {
   else if(k==='"') openLyrAt(gSel);
   else {
     let s = tokenizeCell(k);
-    // แป้นไทยพิมพ์ - กับ 0 ไม่ได้ตรง ๆ ดูจากตำแหน่งปุ่มแทน
+    // แป้นไทยพิมพ์ - กับเลข 0–7 ไม่ได้ตรง ๆ ดูจากตำแหน่งปุ่มแทน (ปุ่ม 3 ของแป้นไทยให้ - ด้วย)
+    const dg = !e.shiftKey && /^(?:Digit|Numpad)([0-7])$/.exec(e.code);
+    if(dg) s = tokenizeCell(dg[1]);
     if(!s.length && (e.code==='Minus' || e.code==='NumpadSubtract')) s = [{type:'tie'}];
-    if(!s.length && (e.code==='Digit0' || e.code==='Numpad0')) s = [{type:'rest'}];
     if(s.length !== 1 || s[0].type === 'group') return;
     if(s[0].type === 'note') preview(s[0].deg, s[0].oct);
     gridPut(s[0]);
@@ -1369,8 +1376,7 @@ function transposeText(text, k){
     let line = '';
     for(let i=0;i<body.length;i++){
       const ch = body[i];
-      let deg = NOTE.indexOf(ch);
-      if(deg < 0) deg = ASCII.indexOf(ch.toLowerCase());
+      const deg = noteDeg(ch);
       if(deg < 0){ line += ch; continue; }
       let oct=0, kh=false, j=i;
       while(j+1 < body.length){

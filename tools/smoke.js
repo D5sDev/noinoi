@@ -195,6 +195,24 @@ Promise.resolve(btn('play').onclick()).then(() => {
     ok('ขยับคีย์โน้ต ▲▼ — ขึ้นแล้วลงได้เดิมคืนครบ');
   }
 
+  // โน้ตตัวเลข 1–7 = ด–ท (เลขไทยก็ได้) — เล่นได้เหมือนตัวอักษร ขยับคีย์/จัดระเบียบแล้วเป็นอักษรไทย
+  {
+    const src = cache['#src'], meta = () => doc.querySelector('#meta').textContent;
+    src.value = 'ดรมฟ ซลทดํ ดฺ-0-'; src.fire('input');
+    const thai = meta();
+    src.value = '1234 567๑\' 1,-0-'; src.fire('input');
+    if (meta() !== thai) die('โน้ตตัวเลขนับไม่เท่าตัวอักษร: "' + thai + '" → "' + meta() + '"');
+    if (btn('trUp')) {
+      btn('trUp').onclick();
+      if (src.value !== 'รมฟซ ลทดํรํ รฺ-0-') die('ขยับคีย์โน้ตตัวเลขไม่ถูก: ' + src.value);
+    }
+    src.value = '1234 567๑\' 1,-0-'; src.fire('input');
+    doc.querySelector('#perLine').value = '8';
+    btn('tidy').onclick();
+    if (src.value !== 'ดรมฟ ซลทดํ ดฺ-0-') die('จัดระเบียบโน้ตตัวเลขไม่เป็นอักษรไทย: ' + src.value);
+    ok('โน้ตตัวเลข — 1–7 เล่นได้ · ขยับคีย์/จัดระเบียบแล้วเป็นอักษรไทย');
+  }
+
   // เนื้อร้อง — บรรทัด " ไม่ถูกเล่น ไม่ถูกขยับคีย์ จัดระเบียบแล้วตามห้องของมันไป
   {
     const src = cache['#src'], meta = () => doc.querySelector('#meta').textContent;
@@ -286,6 +304,14 @@ Promise.resolve(btn('play').onclick()).then(() => {
     fresh(() => kd('ร'));
     if (src.value !== 'ดซํ-0 ร---') die('เว้นวรรคหลังพิมพ์ครบห้องไม่ควรข้ามห้อง: ' + JSON.stringify(src.value));
     ok('แก้ในตาราง — พิมพ์ทับแล้วเลื่อนเอง · ํ ใช้กับตัวที่เพิ่งพิมพ์ · ปุ่ม 0 บนแป้นไทยเป็นหยุดเสียง');
+
+    // ปุ่มเลขบนแป้นไทยให้ ๅ / - … ดูจากตำแหน่งปุ่ม · Shift ค้างไม่นับเป็นเลข
+    const keep = src.value;
+    slots()[4].onclick();
+    kd('5'); kd('-', { code: 'Digit3' }); kd('ๅ', { code: 'Digit1' }); kd('%', { code: 'Digit5', shiftKey: true });
+    if (src.value !== 'ดซํ-0 ซมด-') die('พิมพ์เลขในตารางไม่ตรง: ' + JSON.stringify(src.value));
+    fresh(() => { src.value = keep; src.fire('input'); });
+    ok('แก้ในตาราง — พิมพ์เลข 1–7 เป็นโน้ต · ปุ่มเลขบนแป้นไทยดูจากตำแหน่งปุ่ม');
 
     ghost().onclick();
     fresh(() => kd('ล'));
