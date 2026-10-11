@@ -178,7 +178,7 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
 .cell .foot .chap{color:var(--red)}
 /* กลับต้น — เส้นคู่ปิดท้ายห้องแบบเครื่องหมายซ้ำ กับป้ายมุมซ้ายบน */
 .cell.back{border-right:3px double var(--gold)}
-.cell .foot .backmark{margin-right:auto;color:var(--gold);white-space:nowrap}
+.cell .backmark{align-self:flex-end;justify-self:end;padding-right:3px;font-size:10.5px;line-height:1.3;color:var(--gold);white-space:nowrap}
 /* เนื้อร้อง — width:0 กับ min-width:100% ทำให้ไม่ดันห้องให้กว้างขึ้น ยาวเกินก็ตัดขึ้นบรรทัดใหม่ */
 .cell .lyr{
   width:0;min-width:100%;min-height:1.45em;padding:0 2px;
@@ -317,7 +317,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .printhead p{font-size:10pt;color:#555}
   .cell.back{border-right:3px double #000}
   .sect{color:#000;font-size:12pt;margin:2mm 0 0 22px;break-after:avoid}
-  .cell .foot .backmark{color:#000;font-weight:700}
+  .cell .backmark{color:#000;font-weight:700;font-size:8pt}
   .score{max-height:none;overflow:visible;gap:3mm}
   .line{break-inside:avoid;gap:4px}
   .linenum{color:#888;border:0;flex-basis:18px}
@@ -985,10 +985,7 @@ function render(){
         foot.innerHTML = ks.includes('chap')  ? '<span class="chap">ฉับ</span>'
                        : ks.includes('ching') ? 'ฉิ่ง' : '';
       }
-      if(cell.back){
-        c.classList.add('back');
-        foot.innerHTML = '<span class="backmark" title="จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ">↺ กลับต้น</span>' + foot.innerHTML;
-      }
+      if(cell.back) c.classList.add('back');
       c.appendChild(foot); c.appendChild(slots);
       const base = slotEls.length - n;
       const rows = (cell.lyr||[]).slice();
@@ -1025,6 +1022,11 @@ function render(){
         }
         c.appendChild(l);
       });
+      if(cell.back){                            // ป้ายกลับต้นอยู่ล่างสุดของห้อง ใต้โน้ตและเนื้อร้อง
+        const bm=document.createElement('div'); bm.className='backmark';
+        bm.textContent='↺ กลับต้น'; bm.title='จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ';
+        c.appendChild(bm);
+      }
       wrap.appendChild(c);
       ci++;
     });

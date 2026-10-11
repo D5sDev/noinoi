@@ -261,7 +261,8 @@ Promise.resolve(btn('play').onclick()).then(() => {
     if (voices('ดรมฟ กลับต้น\nซลทด (กลับต้น)') !== 16) die('สองท่อนควรซ้ำท่อนละรอบ');
     doc._slots.length = 0;
     voices('ดรมฟ กลับต้น ซลทด');
-    if (!doc._slots.some(e => e.className === 'foot' && /กลับต้น/.test(e.innerHTML))) die('ห้องที่มีกลับต้นไม่มีป้าย');
+    if (!doc._slots.some(e => e.className === 'backmark' && /กลับต้น/.test(e.textContent))) die('ห้องที่มีกลับต้นไม่มีป้ายใต้ห้อง');
+    if (doc._slots.some(e => e.className === 'foot' && /กลับต้น/.test(e.innerHTML))) die('ป้ายกลับต้นไม่ควรอยู่บนหัวห้องแล้ว');
     const two = 'ดรมฟ กลับต้น\nซลทด (กลับต้น)';
     src.value = two; src.fire('input');
     if (btn('trUp')) {
