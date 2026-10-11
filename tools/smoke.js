@@ -203,9 +203,12 @@ Promise.resolve(btn('play').onclick()).then(() => {
     if (printed !== 1) die('กด PDF แล้วไม่เรียก window.print()');
     const song = doc.querySelector('#title'), keep = song.value;
     song.value = '';
+    const srcKeep = cache['#src'].value;
+    cache['#src'].value = 'ดรมฟ ซ-0- กลับต้น'; cache['#src'].fire('input');   // ไม่นับ - 0 และรอบกลับต้น
     (winLs.beforeprint || []).forEach(fn => fn());
+    cache['#src'].value = srcKeep; cache['#src'].fire('input');
     const head = doc.querySelector('#printMeta').textContent;
-    if (!/ห้อง\/นาที/.test(head)) die('หัวกระดาษไม่มีความเร็ว: ' + head);
+    if (!/(^| · )2 ห้อง \(5 ตัวโน้ต\)$/.test(head)) die('หัวกระดาษควรบอกจำนวนห้องกับตัวโน้ตที่เขียน: ' + head);
     if (/ทาง/.test(head)) die('หัวกระดาษไม่ควรบอกทาง/คีย์: ' + head);
     if (!/^noinoi-\d{8}-\d{4}$/.test(doc.title)) die('ไม่มีชื่อเพลง ชื่อไฟล์ PDF ควรเป็นวันเวลา: ' + doc.title);
     song.value = 'ลาว/ดวง:เดือน';

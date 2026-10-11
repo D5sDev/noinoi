@@ -2123,14 +2123,18 @@ async function exportWav(){
   $('#wav').onclick  = exportWav;
 
   // PDF — ใช้หน้าพิมพ์ของเบราว์เซอร์ เลือก "บันทึกเป็น PDF" ได้ทุกเครื่อง ไม่ต้องฝังฟอนต์ไทยเอง
-  // หน้าตาบนกระดาษอยู่ใน @media print · หัวกระดาษเป็นชื่อเพลง ใต้ชื่อบอกอัตราจังหวะกับความเร็ว
+  // หน้าตาบนกระดาษอยู่ใน @media print · หัวกระดาษเป็นชื่อเพลง ใต้ชื่อบอกอัตราจังหวะ จำนวนห้อง และจำนวนตัวโน้ต
+  // นับตามที่เขียน ไม่นับ - กับ 0 และไม่นับรอบกลับต้น ลูกสะบัดนับทุกตัวในวงเล็บ
   // ชื่อไฟล์ PDF มาจาก document.title จึงตั้งให้เหมือนไฟล์เซฟระหว่างพิมพ์
   // ผูกกับ beforeprint ไม่ใช่ปุ่ม Ctrl+P จากเมนูเบราว์เซอร์ก็ได้หัวกระดาษเหมือนกัน
   const pageTitle = document.title;
   const optText = id => { const el = $(id); return el && el.selectedOptions[0] ? el.selectedOptions[0].textContent : ''; };
+  const noteCount = s => s.type==='note' ? 1 : s.type==='group' ? s.syms.filter(x => x.type==='note').length : 0;
   window.addEventListener('beforeprint', ()=>{
+    let bars = 0, notes = 0;
+    for(const L of curScore) for(const c of L){ bars++; for(const s of c.syms) notes += noteCount(s); }
     $('#printTitle').textContent = $('#title').value.trim();
-    $('#printMeta').textContent = [optText('#chan'), $('#tempo').value+' ห้อง/นาที'].filter(Boolean).join(' · ');
+    $('#printMeta').textContent = [optText('#chan'), bars+' ห้อง ('+notes+' ตัวโน้ต)'].filter(Boolean).join(' · ');
     document.title = fileBase();
   });
   window.addEventListener('afterprint', ()=>{ document.title = pageTitle; });
