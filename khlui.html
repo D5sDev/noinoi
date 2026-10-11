@@ -144,6 +144,7 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
   scrollbar-color:var(--line2) transparent;
 }
 .line{display:flex;gap:10px;align-items:stretch;scroll-margin-top:96px;scroll-margin-bottom:56px}
+.sect{margin:6px 0 -6px 36px;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:.3px}
 .linenum{
   flex:0 0 26px;display:grid;place-items:center;
   font-size:11.5px;color:var(--gold-dim);border-right:1px solid var(--line);
@@ -292,7 +293,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .cell .lyr{font-size:13px}
   body.editing #keys{bottom:calc(64px + env(safe-area-inset-bottom, 0px));padding:7px 8px;align-items:stretch}
   body.editing .keyrow:last-child .tag{display:none}          /* แถวปุ่มอื่น ๆ ต้องพอดีบรรทัดเดียว */
-  body.editing .keyrow:last-child .key{padding:0 9px}
+  body.editing .keyrow:last-child .key{padding:0 6px}
   body.editing #keys .lbl{display:none}                      /* ลบ ย้อน เสร็จ เหลือแค่ไอคอน */
   body.editing{padding-bottom:calc(64px + 210px + env(safe-area-inset-bottom, 0px))}
   body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-top:70px;scroll-margin-bottom:290px}
@@ -319,6 +320,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .printhead h1{font-size:18pt;color:#000;margin-bottom:1mm}
   .printhead p{font-size:10pt;color:#555}
   .cell.back{border-right:3px double #000}
+  .sect{color:#000;font-size:12pt;margin:2mm 0 0 22px;break-after:avoid}
   .cell .foot .backmark{color:#000;font-weight:700}
   .score{max-height:none;overflow:visible;gap:3mm}
   .line{break-inside:avoid;gap:4px}
@@ -540,6 +542,9 @@ function tokenizeCell(str){
 // ต้องดักก่อนแยกโน้ต ไม่งั้น ล ในคำจะกลายเป็นโน้ต
 const BACK_WORD = 'กลับต้น';
 const BACK = /^\(?กลับต้น\)?$/;
+// หัวท่อน — บรรทัดที่ขึ้นต้นด้วย ท่อน (ท่อน 1, ท่อนสอง, ท่อนนำ …) ไม่ใช่โน้ต
+// ห้องแรกของบรรทัดโน้ตถัดไปเป็นต้นท่อน กลับต้นย้อนมาแค่ต้นท่อน (หรือถัดจากกลับต้นอันก่อน ถ้าอยู่หลังกว่า)
+const SECT = /^\s*ท่อน/;
 
 // บรรทัดเนื้อร้องขึ้นต้นด้วย " (iOS อาจเปลี่ยนเป็น “ ให้เอง) — เป็นเนื้อของบรรทัดโน้ตข้างบน
 // " = ห้องละคำ, "" = พยางค์ละโน้ต
@@ -599,7 +604,7 @@ const addLyricLine = (cells, body) => {
 //   ช่อง: sym.at/len · บรรทัดโน้ต: lines[i].from/to · แถวเนื้อร้อง: lines[i].rows[r] = {from, cut, to, kind}
 function parseScore(text){
   const lines=[];
-  let pos=0;
+  let pos=0, sect=null;                 // หัวท่อนที่รอห้องแรกของบรรทัดโน้ตถัดไป
   for(const full of text.split('\n')){
     const raw = full.replace(/\r$/,''), base = pos;
     pos += full.length + 1;
@@ -617,6 +622,7 @@ function parseScore(text){
       }
       continue;
     }
+    if(SECT.test(body)){ sect = {label:body.trim(), from:base, to:base+raw.length}; continue; }
     const cells=[];
     for(const m of body.matchAll(/[^\s|]+/g)){
       if(BACK.test(m[0])){                  // กลับต้น เกาะห้องก่อนหน้า ขึ้นต้นบรรทัดก็เกาะห้องท้ายบรรทัดก่อน
@@ -630,6 +636,7 @@ function parseScore(text){
       if(!syms.length) continue;
       for(const s of syms) s.at += base + m.index;
       cells.push({raw:m[0], syms, at:base+m.index, len:m[0].length});
+      if(sect){ cells[cells.length-1].sect = sect; sect = null; }
     }
     if(cells.length){ cells.from = base; cells.to = base + raw.length; cells.rows = []; lines.push(cells); }
   }
@@ -644,11 +651,12 @@ const freqOf = (deg,oct,o) => o.tuning==='7tet'
 let steps=[];                      // ทุกช่องของทั้งเพลง เรียงต่อกัน
 let seq=[];                        // ลำดับที่เล่นจริง (เลขช่องใน steps) — ท่อนที่มีกลับต้นอยู่สองรอบ
 
-// ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน เล่นจนถึงกลับต้นแล้วเล่นท่อนนั้นซ้ำอีกรอบ
+// ท่อนเริ่มที่ต้นเพลง หัวท่อน หรือถัดจากกลับต้นอันก่อน เล่นจนถึงกลับต้นแล้วเล่นท่อนนั้นซ้ำอีกรอบ
 function buildSeq(){
   seq = [];
   let from = 0;
   steps.forEach((st,i)=>{
+    if(st.sect) from = i;
     seq.push(i);
     if(st.back){ for(let j=from;j<=i;j++) seq.push(j); from = i+1; }
   });
@@ -1044,6 +1052,10 @@ function render(){
   }
   let ci=0;
   curScore.forEach((cells,li)=>{
+    if(cells[0].sect){
+      const h=document.createElement('div'); h.className='sect'; h.textContent=cells[0].sect.label;
+      scoreEl.appendChild(h);
+    }
     const line=document.createElement('div'); line.className='line';
     const num=document.createElement('div'); num.className='linenum'; num.textContent=li+1;
     const wrap=document.createElement('div'); wrap.className='cells';
@@ -1067,7 +1079,7 @@ function render(){
         b.title = 'คลิกเพื่อตั้งเป็นจุดเริ่มเล่น';
         b.onclick = ()=>setStart(idx);
         slots.appendChild(b); slotEls.push(b);
-        steps.push({sym, cellIdx:ci, si, n, li, k, back: !!cell.back && si===n-1});
+        steps.push({sym, cellIdx:ci, si, n, li, k, back: !!cell.back && si===n-1, sect: !!cell.sect && si===0});
       });
       const foot=document.createElement('div'); foot.className='foot';
       if(o.ching){
@@ -1240,6 +1252,17 @@ function gridRepeat(){
   else editText(cell.at+cell.len, cell.at+cell.len, ' '+BACK_WORD);
 }
 
+// ใส่/เอาออก หัวท่อนเหนือบรรทัดของช่องที่เลือก — ท่อนเริ่มต้นบรรทัดเสมอ
+// ตั้งชื่อ ท่อน 1, 2 … ตามลำดับ ต้นเพลงที่ไม่มีหัวท่อนนับเป็นท่อนแรก แก้ชื่อในช่องพิมพ์ได้
+function gridSect(){
+  const st = steps[gSel];
+  if(!st) return;
+  const L = curScore[st.li];
+  if(L[0].sect){ const h = L[0].sect; editText(h.from, Math.min(h.to+1, srcEl.value.length), ''); return; }
+  const n = 1 + curScore.slice(0, st.li).filter(x => x[0].sect).length + (st.li > 0 && !curScore[0][0].sect ? 1 : 0);
+  editText(L.from, L.from, 'ท่อน ' + n + '\n');
+}
+
 // ขึ้น-ลงคู่แปดหรือเสียงควง ใช้กับตัวที่เพิ่งพิมพ์ ไม่งั้นช่องที่เลือก — พิมพ์ ด แล้ว ํ ได้เหมือนในช่องพิมพ์
 function gridMod(f){
   const i = (gLast >= 0 && gSel === gLast+1) ? gLast : gSel, st = steps[i];
@@ -1286,6 +1309,7 @@ function gridKey(txt){
   else if(/^\n"+ $/.test(txt)) openLyrAt(gSel);
   else if(txt === '*') gridMod(s => (s.kh = !s.kh, s));
   else if(txt === ' '+BACK_WORD) gridRepeat();
+  else if(txt === '§') gridSect();
   else { const s = tokenizeCell(txt); if(s.length === 1 && s[0].type !== 'group') gridPut(s[0]); }
   return true;
 }
@@ -1448,7 +1472,7 @@ function transposeText(text, k){
   if(!k) return text;
   const out = [];
   for(const raw of text.split('\n')){
-    if(LYR.test(raw)){ out.push(raw); continue; }   // เนื้อร้องไม่ใช่โน้ต
+    if(LYR.test(raw) || SECT.test(raw)){ out.push(raw); continue; }   // เนื้อร้องกับหัวท่อนไม่ใช่โน้ต
     let cut = raw.length;
     const a = raw.indexOf('//'), b = raw.indexOf('#');
     if(a >= 0) cut = Math.min(cut, a);
@@ -1541,10 +1565,12 @@ function tidy(){
   const cells=[], notes=[];          // notes[li] = คำอธิบายท้ายบรรทัดเดิม
   const head=[];                     // เนื้อร้องที่ไม่มีบรรทัดโน้ตอยู่ข้างบน — เก็บไว้หัวไฟล์
   let prev=null;                     // ห้องของบรรทัดโน้ตล่าสุด ให้เนื้อร้องเกาะ
+  let sect=null;                     // หัวท่อน (ทั้งบรรทัดพร้อมคำอธิบาย) ที่รอห้องถัดไป
   src.forEach((line,li)=>{
     const m = line.match(/(?:\/\/|#)(.*)$/);
     notes[li] = m ? '// '+m[1].trim() : '';
     const body = line.split('//')[0].split('#')[0].trim();
+    if(SECT.test(body)){ sect = line.trim(); notes[li] = ''; return; }
     if(LYR.test(body)){
       if(!prev){ head.push(line.trim()); notes[li]=''; return; }
       addLyricLine(prev, body);
@@ -1556,7 +1582,10 @@ function tidy(){
     for(const tok of body.split(/[\s|]+/).filter(Boolean)){
       if(BACK.test(tok)){ if(cells.length) cells[cells.length-1].back = true; continue; }
       const syms = tokenizeCell(tok);
-      if(syms.length){ const c={txt:cellText(syms), src:li, syms}; cells.push(c); mine.push(c); }
+      if(syms.length){
+        const c={txt:cellText(syms), src:li, syms}; cells.push(c); mine.push(c);
+        if(sect){ c.sect = sect; sect = null; }
+      }
     }
     if(mine.length) prev=mine;
   });
@@ -1565,12 +1594,20 @@ function tidy(){
   const lastOf = {};                 // ห้องสุดท้ายของแต่ละบรรทัดเดิมไปอยู่ลำดับที่เท่าไร
   cells.forEach((c,i)=>{ lastOf[c.src]=i; });
 
+  // บรรทัดละ per ห้อง หัวท่อนบังคับขึ้นบรรทัดใหม่
+  const parts=[];
+  cells.forEach((c,i)=>{
+    const p = parts[parts.length-1];
+    if(!p || p.length >= per || c.sect) parts.push(Object.assign([c], {i}));
+    else p.push(c);
+  });
   const out=[...head];
-  for(let i=0;i<cells.length;i+=per){
-    const part = cells.slice(i,i+per);
+  for(const part of parts){
+    const i = part.i;
+    if(part[0].sect) out.push(part[0].sect);
     let line = part.map(c=>c.txt + (c.back ? ' '+BACK_WORD : '')).join(' ');
     const cm = Object.keys(lastOf)
-      .filter(k => lastOf[k]>=i && lastOf[k]<i+per && notes[k])
+      .filter(k => lastOf[k]>=i && lastOf[k]<i+part.length && notes[k])
       .map(k => notes[k]);
     if(cm.length) line += '   ' + cm.join(' ');
     out.push(line);
@@ -1592,6 +1629,7 @@ function tidy(){
   // บรรทัดที่มีแต่คำอธิบาย ไม่มีโน้ต — เก็บไว้ท้ายไฟล์ ไม่ให้หาย
   const orphan = notes.filter((c,li)=> c && lastOf[li]===undefined);
   if(orphan.length) out.push(orphan.join(' '));
+  if(sect) out.push(sect);           // หัวท่อนท้ายไฟล์ที่ยังไม่มีโน้ตตาม
 
   srcEl.value = out.join('\n');
   render();
@@ -1625,10 +1663,14 @@ function insert(txt){
   row.appendChild(tag);
   [['–','-','ยืดเสียง'],['๐','0','หยุดเสียง'],['ควง *','*','เสียงควง — ความถี่เดิม แต่สีเสียงทึบกว่า'],
    ['ห้องใหม่',' ',''],
-   ['↺ กลับต้น',' '+BACK_WORD,'ใส่/เอาออก กลับต้นท้ายห้องที่เลือก — จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน']].forEach(k=>{
+   ['↺ กลับต้น',' '+BACK_WORD,'ใส่/เอาออก กลับต้นท้ายห้องที่เลือก — จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ'],
+   ['§ ท่อน','§','ใส่/เอาออก หัวท่อนเหนือบรรทัดของช่องที่เลือก — กลับต้นในท่อนนี้ย้อนมาแค่ต้นท่อน']].forEach(k=>{
     const b=document.createElement('button');
     b.className = k[0].length>1 ? 'key util' : 'key';
-    b.textContent=k[0]; if(k[2]) b.title=k[2];
+    // ↺ กับ § — มือถือเหลือแค่ไอคอนเหมือน ⌫ ↶ ✓ แถวนี้จะได้ไม่ตกบรรทัด
+    if(/^[↺§] /.test(k[0])) b.innerHTML = k[0][0]+'<span class="lbl">'+k[0].slice(1)+'</span>';
+    else b.textContent=k[0];
+    if(k[2]) b.title=k[2];
     b.onclick=()=>insert(k[1]);
     row.appendChild(b);
   });

@@ -271,6 +271,25 @@ Promise.resolve(btn('play').onclick()).then(() => {
     btn('tidy').onclick();
     if (src.value !== 'ดรมฟ กลับต้น ซลทด กลับต้น') die('จัดระเบียบแล้วกลับต้นหาย: ' + src.value);
     ok('กลับต้น — ท่อนเล่นสองรอบ · บรรทัดเดี่ยว/สองท่อน · มีป้ายบนตาราง · ขยับคีย์และจัดระเบียบไม่ทำคำเพี้ยน');
+
+    // หัวท่อน — บรรทัดขึ้นต้นด้วย ท่อน ไม่ใช่โน้ต กลับต้นย้อนมาแค่ต้นท่อน
+    if (voices('ดรมฟ\nซลทด กลับต้น') !== 16) die('ไม่มีหัวท่อน กลับต้นควรย้อนถึงต้นเพลง');
+    if (voices('ดรมฟ\nท่อน 2\nซลทด กลับต้น') !== 12) die('มีหัวท่อน กลับต้นควรซ้ำแค่ท่อนนั้น');
+    if (voices('ดรมฟ\nท่อนสอง\nซลทด กลับต้น') !== 12) die('ท่อนสอง (ไม่เว้นวรรค) ควรเป็นหัวท่อน');
+    if (voices('ท่อน 1\nดรมฟ') !== 4) die('หัวท่อนถูกนับเป็นโน้ต');
+    doc._slots.length = 0;
+    voices('ดรมฟ\nท่อน 2\nซลทด');
+    const heads = doc._slots.filter(e => e.className === 'sect').map(e => e.textContent);
+    if (heads.join() !== 'ท่อน 2') die('หัวท่อนไม่ขึ้นบนตาราง: ' + heads.join());
+    src.value = 'ท่อน 1\nดรมฟ'; src.fire('input');
+    if (btn('trUp')) {
+      btn('trUp').onclick();
+      if (src.value !== 'ท่อน 1\nรมฟซ') die('ขยับคีย์แล้วหัวท่อนเพี้ยน: ' + src.value);
+    }
+    src.value = 'ท่อน 1 // นำ\nดรมฟ ซลทด\nท่อนสอง\nทลซฟ กลับต้น'; src.fire('input');
+    btn('tidy').onclick();
+    if (src.value !== 'ท่อน 1 // นำ\nดรมฟ ซลทด\nท่อนสอง\nทลซฟ กลับต้น') die('จัดระเบียบแล้วหัวท่อนไม่อยู่ที่เดิม:\n' + src.value);
+    ok('หัวท่อน — ท่อน 1 / ท่อนสอง ไม่ใช่โน้ต · กลับต้นซ้ำแค่ท่อน · ขึ้นบนตาราง · ขยับคีย์ไม่แตะ · จัดระเบียบแล้วขึ้นบรรทัดใหม่ที่หัวท่อน');
   }
 
   // เนื้อร้อง — บรรทัด " ไม่ถูกเล่น ไม่ถูกขยับคีย์ จัดระเบียบแล้วตามห้องของมันไป
@@ -386,7 +405,7 @@ Promise.resolve(btn('play').onclick()).then(() => {
     ok('แก้ในตาราง — ช่อง + ต่อห้องใหม่ · Backspace ล้างช่อง · Ctrl+Z ย้อน · ปุ่มบนแป้นเขียนลงตาราง');
 
     // ↺ กลับต้น บนแป้น — ใส่ท้ายห้องของช่องที่เลือก กดซ้ำเอาออก · ห้องสุดท้ายมีกลับต้นแล้ว ช่อง + ขึ้นบรรทัดใหม่หลังคำ
-    const backBtn = doc._all.find(e => e.textContent === '↺ กลับต้น');
+    const backBtn = doc._all.find(e => /^↺/.test(e.innerHTML || ''));
     if (!backBtn) die('แป้นไม่มีปุ่ม ↺ กลับต้น');
     const keep2 = src.value;
     slots()[1].onclick(); fresh(() => backBtn.onclick());
@@ -398,6 +417,17 @@ Promise.resolve(btn('play').onclick()).then(() => {
     if (src.value !== 'มซํ-0 ร--- กลับต้น\nล---') die('ต่อห้องหลังกลับต้นไม่ขึ้นบรรทัดใหม่: ' + JSON.stringify(src.value));
     fresh(() => { src.value = keep2; src.fire('input'); });
     ok('แก้ในตาราง — ปุ่ม ↺ ใส่/เอาออกกลับต้นท้ายห้อง · ต่อห้องหลังกลับต้นขึ้นบรรทัดใหม่');
+
+    // § ท่อน บนแป้น — ใส่หัวท่อนเหนือบรรทัดของช่องที่เลือก (ต้นเพลงไม่มีหัวนับเป็นท่อน 1) กดซ้ำเอาออก
+    const sectBtn = doc._all.find(e => /^§/.test(e.innerHTML || ''));
+    if (!sectBtn) die('แป้นไม่มีปุ่ม § ท่อน');
+    fresh(() => { src.value = 'ดรมฟ\nซลทด'; src.fire('input'); });
+    slots()[6].onclick(); fresh(() => sectBtn.onclick());
+    if (src.value !== 'ดรมฟ\nท่อน 2\nซลทด') die('ใส่หัวท่อนในตารางไม่ตรง: ' + JSON.stringify(src.value));
+    slots()[6].onclick(); fresh(() => sectBtn.onclick());
+    if (src.value !== 'ดรมฟ\nซลทด') die('กดหัวท่อนซ้ำควรเอาออก: ' + JSON.stringify(src.value));
+    fresh(() => { src.value = keep2; src.fire('input'); });
+    ok('แก้ในตาราง — ปุ่ม § ใส่/เอาออกหัวท่อน ตั้งชื่อตามลำดับ');
 
     // เนื้อร้อง: บรรทัดที่ยังไม่มีเนื้อมีแถวว่างให้แตะ พิมพ์แล้วเว้นวรรคไปโน้ตถัดไป
     fresh(() => { src.value = 'ดรมฟ ซ---'; src.fire('input'); });
