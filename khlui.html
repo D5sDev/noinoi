@@ -80,6 +80,7 @@ main{
 .meta{font-size:12.5px;color:var(--dim)}
 
 /* editor */
+input#title{font-size:16px;font-weight:600;margin-bottom:10px}
 textarea#src{
   width:100%;min-height:190px;resize:vertical;
   background:#100e0a;color:var(--fg);
@@ -89,7 +90,6 @@ textarea#src{
   outline:none;
 }
 textarea#src:focus{border-color:var(--gold-dim)}
-.hint{font-size:12px;color:var(--dim);margin-top:8px}
 .tidybar{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 .tidybar label{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px}
 .tidybar input[type=number]{width:66px;padding:6px 8px;font-size:13px}
@@ -102,7 +102,8 @@ textarea#src:focus{border-color:var(--gold-dim)}
 .pair select:last-child{flex:0 0 76px}
 
 /* note keypad */
-.keys{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+/* แป้นโน้ตใช้ตอนแก้ในตารางเท่านั้น — ช่องพิมพ์พิมพ์จากคีย์บอร์ดตรง ๆ */
+.keys{display:none;flex-direction:column;gap:6px}
 .keyrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .keyrow .tag{width:38px;flex:0 0 38px;font-size:11.5px;color:var(--dim);text-align:right}
 .key{
@@ -120,11 +121,11 @@ textarea#src:focus{border-color:var(--gold-dim)}
 .field{display:grid;gap:5px}
 .field > label{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:8px}
 .field > label b{color:var(--gold);font-variant-numeric:tabular-nums}
-select,input[type=number]{
+select,input[type=number],input[type=text]{
   font:inherit;font-size:14px;width:100%;
   background:#100e0a;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none;
 }
-select:focus,input[type=number]:focus{border-color:var(--gold-dim)}
+select:focus,input[type=number]:focus,input[type=text]:focus{border-color:var(--gold-dim)}
 input[type=range]{width:100%;accent-color:var(--gold);background:transparent}
 input[type=range]:disabled{opacity:.3;cursor:not-allowed}
 .field:has(input[type=range]:disabled) > label{opacity:.45}
@@ -178,6 +179,9 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
   font-size:10.5px;color:var(--gold-dim);padding-right:3px;letter-spacing:.5px;
 }
 .cell .foot .chap{color:var(--red)}
+/* กลับต้น — เส้นคู่ปิดท้ายห้องแบบเครื่องหมายซ้ำ กับป้ายมุมซ้ายบน */
+.cell.back{border-right:3px double var(--gold)}
+.cell .foot .backmark{margin-right:auto;color:var(--gold);white-space:nowrap}
 /* เนื้อร้อง — width:0 กับ min-width:100% ทำให้ไม่ดันห้องให้กว้างขึ้น ยาวเกินก็ตัดขึ้นบรรทัดใหม่ */
 .cell .lyr{
   width:0;min-width:100%;min-height:1.45em;padding:0 2px;
@@ -212,10 +216,9 @@ body.editing .lyr.syl span:hover,body.editing .cell .lyr:not(.syl):hover{backgro
 }
 .gridonly{display:none}
 body.editing .gridonly{display:inline-block}
-body.editing .textonly{display:none}
 /* แป้นโน้ตย้ายมาเกาะล่างจอ จะได้ไม่ต้องเลื่อนขึ้นไปหา */
 body.editing #keys{
-  position:fixed;left:0;right:0;bottom:0;z-index:25;margin:0;align-items:center;
+  display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;margin:0;align-items:center;
   padding:8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
   background:rgba(20,17,13,.97);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.45);
 }
@@ -223,7 +226,6 @@ body.editing{padding-bottom:200px}
 body.editing .score{max-height:none}   /* แป้นโน้ตบังก้นจอ กรอบเลื่อนในตัวจะโดนบัง ให้หน้าเว็บเลื่อนแทน */
 body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-top:90px;scroll-margin-bottom:220px}
 .empty{color:var(--dim);font-size:13.5px;padding:14px 2px}
-.hint a{color:var(--gold)}
 
 @media(max-width:900px){ main{grid-template-columns:1fr} }
 @media screen and (max-width:999px){ .cells{grid-template-columns:repeat(4,1fr)} }
@@ -268,7 +270,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .fileops .btn{color:var(--fg)}
 
   /* ปรับให้ไม่โดนซูมเองตอนแตะช่องกรอกบน iOS */
-  select,input[type=number]{font-size:16px}
+  select,input[type=number],input[type=text]{font-size:16px}
   .tidybar input[type=number]{font-size:16px;width:72px}
   .tidybar select{font-size:16px}
 
@@ -313,7 +315,11 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .top,main > .panel:not(.wide),.panel-head,.cell.ghost,.lyr.ph,.lyrin{display:none !important}
   main{display:block;max-width:none;padding:0}
   .panel{background:none;border:0;padding:0}
-  .printhead{display:block;font-size:11pt;color:#333;margin-bottom:4mm}
+  .printhead{display:block;margin-bottom:4mm}
+  .printhead h1{font-size:18pt;color:#000;margin-bottom:1mm}
+  .printhead p{font-size:10pt;color:#555}
+  .cell.back{border-right:3px double #000}
+  .cell .foot .backmark{color:#000;font-weight:700}
   .score{max-height:none;overflow:visible;gap:3mm}
   .line{break-inside:avoid;gap:4px}
   .linenum{color:#888;border:0;flex-basis:18px}
@@ -366,6 +372,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
       <h2>โน้ต</h2>
       <select id="preset" style="width:auto"></select>
     </div>
+    <input type="text" id="title" placeholder="ชื่อเพลง" maxlength="120" autocomplete="off" spellcheck="false" title="ชื่อเพลง — ขึ้นหัวกระดาษ PDF และเป็นชื่อไฟล์ตอนเซฟ">
     <textarea id="src" spellcheck="false"></textarea>
     <div class="tidybar">
       <button class="btn ghost sm" id="tidy">⌗ จัดระเบียบโน้ต</button>
@@ -377,7 +384,6 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
       <span class="subhint" id="lsNote"></span>
     </div>
     <div class="keys" id="keys"></div>
-    <p class="hint">คลิกปุ่มเพื่อฟังเสียงและแทรกโน้ต · เว้นวรรค = ขึ้นห้องใหม่ · ขึ้นบรรทัดใหม่ = บรรทัดถัดไป · บรรทัดขึ้นต้นด้วย " = เนื้อร้อง · <a href="guide.html">วิธีเขียนทั้งหมด</a><br>คลิกช่องในบรรทัดโน้ตด้านล่างเพื่อตั้งจุดเริ่มเล่น (คลิกซ้ำเพื่อยกเลิก) · เว้นวรรคบนคีย์บอร์ด = เล่น/พัก</p>
   </section>
 
   <section class="panel">
@@ -472,7 +478,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
         <button class="btn sm" id="editGrid" title="พิมพ์โน้ตและเนื้อร้องลงตารางนี้ได้เลย แป้นโน้ตจะย้ายมาเกาะล่างจอ">✎ แก้ในตาราง</button>
       </div>
     </div>
-    <div class="printhead" id="printHead"></div>
+    <div class="printhead" id="printHead"><h1 id="printTitle"></h1><p id="printMeta"></p></div>
     <div class="score" id="score"></div>
   </section>
 
@@ -528,6 +534,12 @@ function tokenizeCell(str){
   }
   return out;
 }
+
+// กลับต้น — จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ ก่อนเล่นต่อ
+// ท่อนเริ่มที่ต้นเพลง หรือห้องถัดจากกลับต้นอันก่อน · เขียนเป็นคำแยกด้วยเว้นวรรค มีวงเล็บครอบก็ได้
+// ต้องดักก่อนแยกโน้ต ไม่งั้น ล ในคำจะกลายเป็นโน้ต
+const BACK_WORD = 'กลับต้น';
+const BACK = /^\(?กลับต้น\)?$/;
 
 // บรรทัดเนื้อร้องขึ้นต้นด้วย " (iOS อาจเปลี่ยนเป็น “ ให้เอง) — เป็นเนื้อของบรรทัดโน้ตข้างบน
 // " = ห้องละคำ, "" = พยางค์ละโน้ต
@@ -607,6 +619,13 @@ function parseScore(text){
     }
     const cells=[];
     for(const m of body.matchAll(/[^\s|]+/g)){
+      if(BACK.test(m[0])){                  // กลับต้น เกาะห้องก่อนหน้า ขึ้นต้นบรรทัดก็เกาะห้องท้ายบรรทัดก่อน
+        const L = lines[lines.length-1], prev = cells.length ? cells[cells.length-1] : L && L[L.length-1];
+        const sp = m.index > 0 && /[ \t]/.test(body[m.index-1]) ? 1 : 0;   // เอาออกพร้อมเว้นวรรคข้างหน้า
+        if(prev) Object.assign(prev, {back:true, backEnd:base+raw.length,
+                                      backFrom:base+m.index-sp, backTo:base+m.index+m[0].length});
+        continue;
+      }
       const syms = tokenizeCell(m[0]);
       if(!syms.length) continue;
       for(const s of syms) s.at += base + m.index;
@@ -623,16 +642,30 @@ const freqOf = (deg,oct,o) => o.tuning==='7tet'
 
 /* ══════════ 2. สร้างลำดับเหตุการณ์ ══════════ */
 let steps=[];                      // ทุกช่องของทั้งเพลง เรียงต่อกัน
+let seq=[];                        // ลำดับที่เล่นจริง (เลขช่องใน steps) — ท่อนที่มีกลับต้นอยู่สองรอบ
+
+// ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน เล่นจนถึงกลับต้นแล้วเล่นท่อนนั้นซ้ำอีกรอบ
+function buildSeq(){
+  seq = [];
+  let from = 0;
+  steps.forEach((st,i)=>{
+    seq.push(i);
+    if(st.back){ for(let j=from;j<=i;j++) seq.push(j); from = i+1; }
+  });
+}
+const posOf = i => Math.max(0, seq.indexOf(i));   // รอบแรกของช่องนั้น
 
 const slotDur = (o,st) => (60/o.tempo)/st.n;
+const stepAt = p => steps[seq[p]];
 
-// ความยาวโน้ต = ช่องตัวเอง + ช่องยืดเสียง (-) ที่ตามมา
+// ความยาวโน้ตที่ลำดับ p = ช่องตัวเอง + ช่องยืดเสียง (-) ที่ตามมาตามลำดับที่เล่นจริง
+// ตอนกลับต้น โน้ตท้ายท่อนจึงยืดต่อไปถึง - ต้นท่อนได้เลย
 // wrap = เล่นวน — ยืดถึงท้ายเพลงแล้วต่อด้วย - ต้นรอบใหม่ (จากจุดเริ่มเล่น) เสียงจะไม่ขาดตอนวนกลับ
-function noteDur(o,i,wrap){
-  let d = slotDur(o,steps[i]), j = i+1;
-  for(;j<steps.length && steps[j].sym.type==='tie';j++) d += slotDur(o,steps[j]);
-  if(wrap && j===steps.length)
-    for(j=startStep; j<i && steps[j].sym.type==='tie'; j++) d += slotDur(o,steps[j]);
+function noteDur(o,p,wrap){
+  let d = slotDur(o,stepAt(p)), j = p+1;
+  for(;j<seq.length && stepAt(j).sym.type==='tie';j++) d += slotDur(o,stepAt(j));
+  if(wrap && j===seq.length)
+    for(j=posOf(startStep); j<p && stepAt(j).sym.type==='tie'; j++) d += slotDur(o,stepAt(j));
   return d;
 }
 
@@ -660,8 +693,8 @@ function percAt(o,ci,si,n){
 }
 
 // เสียงที่ต้องเล่นในช่องนี้ — ช่องปกติได้ 1 เสียง, ลูกสะบัดได้หลายเสียงซอยเท่า ๆ กัน
-function notesOfStep(o,i,wrap){
-  const st=steps[i], d=slotDur(o,st), tail=noteDur(o,i,wrap)-d;   // tail = ช่องยืดเสียงที่ตามมา
+function notesOfStep(o,p,wrap){
+  const st=stepAt(p), d=slotDur(o,st), tail=noteDur(o,p,wrap)-d;   // tail = ช่องยืดเสียงที่ตามมา
   const out=[];
   if(st.sym.type==='note'){
     out.push({dt:0,dur:d+tail,deg:st.sym.deg,oct:st.sym.oct,kh:st.sym.kh});
@@ -682,10 +715,10 @@ function notesOfStep(o,i,wrap){
 function buildEvents(o){
   const notes=[],perc=[],marks=[];
   let t=0;
-  for(let i=0;i<steps.length;i++){
-    const st=steps[i];
+  for(let p=0;p<seq.length;p++){
+    const st=stepAt(p);
     marks.push(t);
-    for(const x of notesOfStep(o,i)) notes.push({t:t+x.dt,dur:x.dur,deg:x.deg,oct:x.oct,kh:x.kh});
+    for(const x of notesOfStep(o,p)) notes.push({t:t+x.dt,dur:x.dur,deg:x.deg,oct:x.oct,kh:x.kh});
     const spc=60/o.tempo;
     for(const e of percAt(o,st.cellIdx,st.si,st.n)) perc.push({t:t+e.dt*spc, kind:e.kind});
     t += slotDur(o,st);
@@ -997,7 +1030,7 @@ function render(){
   const o = readOpts();
   curScore = parseScore(srcEl.value);
   const keepY = scoreEl.scrollTop;      // สร้างตารางใหม่แล้วกรอบไม่เด้งกลับขึ้นบนสุด
-  scoreEl.innerHTML=''; slotEls=[]; steps=[]; sylEls=[]; sylAt=[]; lyrAt.clear(); ghostEl=null;
+  scoreEl.innerHTML=''; slotEls=[]; steps=[]; seq=[]; sylEls=[]; sylAt=[]; lyrAt.clear(); ghostEl=null;
   if(!curScore.length){
     scoreEl.innerHTML = '<p class="empty">ยังไม่มีโน้ต — พิมพ์โน้ตในช่องด้านบน หรือเลือกตัวอย่าง</p>';
     metaEl.textContent='';
@@ -1034,13 +1067,17 @@ function render(){
         b.title = 'คลิกเพื่อตั้งเป็นจุดเริ่มเล่น';
         b.onclick = ()=>setStart(idx);
         slots.appendChild(b); slotEls.push(b);
-        steps.push({sym, cellIdx:ci, si, n, li, k});
+        steps.push({sym, cellIdx:ci, si, n, li, k, back: !!cell.back && si===n-1});
       });
       const foot=document.createElement('div'); foot.className='foot';
       if(o.ching){
         const ks = percOf(o,ci).map(e=>e.kind);
         foot.innerHTML = ks.includes('chap')  ? '<span class="chap">ฉับ</span>'
                        : ks.includes('ching') ? 'ฉิ่ง' : '';
+      }
+      if(cell.back){
+        c.classList.add('back');
+        foot.innerHTML = '<span class="backmark" title="จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ">↺ กลับต้น</span>' + foot.innerHTML;
       }
       c.appendChild(foot); c.appendChild(slots);
       const base = slotEls.length - n;
@@ -1084,6 +1121,7 @@ function render(){
     if(editOn && li === curScore.length-1) wrap.appendChild(ghostCell());
     line.appendChild(num); line.appendChild(wrap); scoreEl.appendChild(line);
   });
+  buildSeq();
   // ช่องยืดเสียงยังร้องพยางค์ของโน้ตก่อนหน้าอยู่ หยุดเสียงแล้วไม่มีพยางค์ไหนติดสี
   let on=-1;
   steps.forEach((st,i)=>{ if(st.sym.type==='rest') on=-1; else if(isOnset(st.sym)) on=i; sylAt.push(on); });
@@ -1188,8 +1226,18 @@ function appendCell(first){
   const cell = first + '---', v = srcEl.value, L = curScore[curScore.length-1];
   if(!L){ editText(v.length, v.length, (v && !v.endsWith('\n') ? '\n' : '') + cell); return; }
   const per = Math.max(1, +$('#perLine').value || 8), last = L[L.length-1];
-  if(L.length < per) editText(last.at+last.len, last.at+last.len, ' ' + cell);
+  if(last.back){ const end = Math.max(last.backEnd, L.rows.length ? L.rows[L.rows.length-1].to : L.to); editText(end, end, '\n' + cell); }
+  else if(L.length < per) editText(last.at+last.len, last.at+last.len, ' ' + cell);
   else { const end = L.rows.length ? L.rows[L.rows.length-1].to : L.to; editText(end, end, '\n' + cell); }
+}
+
+// ใส่/เอาออก กลับต้นท้ายห้อง — ห้องที่เพิ่งพิมพ์จบ ไม่งั้นห้องของช่องที่เลือก
+function gridRepeat(){
+  const i = (gLast >= 0 && gSel === gLast+1) ? gLast : gSel, st = steps[i];
+  if(!st) return;
+  const cell = curScore[st.li][st.k];
+  if(cell.back) editText(cell.backFrom, cell.backTo, '');
+  else editText(cell.at+cell.len, cell.at+cell.len, ' '+BACK_WORD);
 }
 
 // ขึ้น-ลงคู่แปดหรือเสียงควง ใช้กับตัวที่เพิ่งพิมพ์ ไม่งั้นช่องที่เลือก — พิมพ์ ด แล้ว ํ ได้เหมือนในช่องพิมพ์
@@ -1237,6 +1285,7 @@ function gridKey(txt){
   else if(txt === '\n') gridJump('line');
   else if(/^\n"+ $/.test(txt)) openLyrAt(gSel);
   else if(txt === '*') gridMod(s => (s.kh = !s.kh, s));
+  else if(txt === ' '+BACK_WORD) gridRepeat();
   else { const s = tokenizeCell(txt); if(s.length === 1 && s[0].type !== 'group') gridPut(s[0]); }
   return true;
 }
@@ -1407,6 +1456,7 @@ function transposeText(text, k){
     const body = raw.slice(0, cut), rest = raw.slice(cut);
     let line = '';
     for(let i=0;i<body.length;i++){
+      if(body.startsWith(BACK_WORD, i)){ line += BACK_WORD; i += BACK_WORD.length-1; continue; }
       const ch = body[i];
       const deg = noteDeg(ch);
       if(deg < 0){ line += ch; continue; }
@@ -1504,6 +1554,7 @@ function tidy(){
     }
     const mine=[];
     for(const tok of body.split(/[\s|]+/).filter(Boolean)){
+      if(BACK.test(tok)){ if(cells.length) cells[cells.length-1].back = true; continue; }
       const syms = tokenizeCell(tok);
       if(syms.length){ const c={txt:cellText(syms), src:li, syms}; cells.push(c); mine.push(c); }
     }
@@ -1517,7 +1568,7 @@ function tidy(){
   const out=[...head];
   for(let i=0;i<cells.length;i+=per){
     const part = cells.slice(i,i+per);
-    let line = part.map(c=>c.txt).join(' ');
+    let line = part.map(c=>c.txt + (c.back ? ' '+BACK_WORD : '')).join(' ');
     const cm = Object.keys(lastOf)
       .filter(k => lastOf[k]>=i && lastOf[k]<i+per && notes[k])
       .map(k => notes[k]);
@@ -1547,11 +1598,11 @@ function tidy(){
 }
 
 /* ---------- แป้นโน้ต ---------- */
-function insert(txt,back){
+function insert(txt){
   if(gridKey(txt)) return;                 // แก้ในตารางอยู่ — ปุ่มบนแป้นเขียนลงช่องที่เลือกแทน
   const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
   el.value = el.value.slice(0,s) + txt + el.value.slice(e);
-  el.selectionStart = el.selectionEnd = s + txt.length - (back||0);
+  el.selectionStart = el.selectionEnd = s + txt.length;
   el.focus(); render();
 }
 (function buildKeys(){
@@ -1572,27 +1623,13 @@ function insert(txt,back){
   const row=document.createElement('div'); row.className='keyrow';
   const tag=document.createElement('span'); tag.className='tag'; tag.textContent='อื่น ๆ';
   row.appendChild(tag);
-  [['–','-','ยืดเสียง',0],
-   ['๐','0','หยุดเสียง',0],
-   ['สะบัด ( )','()','ลูกสะบัด — พิมพ์โน้ตหลายตัวไว้ในวงเล็บ ซอยอยู่ในช่องเดียว',1],
-   ['ควง *','*','เสียงควง — ความถี่เดิม แต่สีเสียงทึบกว่า',0],
-   ['ห้องใหม่',' ','',0],
-   ['บรรทัดใหม่','\n','',0]].forEach(k=>{
+  [['–','-','ยืดเสียง'],['๐','0','หยุดเสียง'],['ควง *','*','เสียงควง — ความถี่เดิม แต่สีเสียงทึบกว่า'],
+   ['ห้องใหม่',' ',''],
+   ['↺ กลับต้น',' '+BACK_WORD,'ใส่/เอาออก กลับต้นท้ายห้องที่เลือก — จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน']].forEach(k=>{
     const b=document.createElement('button');
     b.className = k[0].length>1 ? 'key util' : 'key';
     b.textContent=k[0]; if(k[2]) b.title=k[2];
-    b.onclick=()=>insert(k[1],k[3]);
-    row.appendChild(b);
-  });
-  // เนื้อร้องต้องอยู่บรรทัดของตัวเอง — ขึ้นบรรทัดใหม่ต่อท้ายบรรทัดที่เคอร์เซอร์อยู่
-  [['" เนื้อตามห้อง','\n" ','เพิ่มบรรทัดเนื้อร้องใต้บรรทัดโน้ตนี้ — คำละห้อง เว้นวรรคแบ่งห้อง'],
-   ['"" เนื้อตามโน้ต','\n"" ','เพิ่มบรรทัดเนื้อร้องใต้บรรทัดโน้ตนี้ — พยางค์ละโน้ต เว้นวรรคแยกพยางค์ _ = โน้ตที่ไม่มีคำ']].forEach(k=>{
-    const b=document.createElement('button'); b.className='key util'; b.textContent=k[0]; b.title=k[2];
-    b.onclick=()=>{
-      const el=srcEl; let e=el.value.indexOf('\n', el.selectionEnd);
-      if(e<0) e=el.value.length;
-      el.selectionStart=el.selectionEnd=e; insert(k[1]);
-    };
+    b.onclick=()=>insert(k[1]);
     row.appendChild(b);
   });
   const del=document.createElement('button'); del.className='key util'; del.innerHTML='⌫<span class="lbl"> ลบ</span>';
@@ -1604,8 +1641,6 @@ function insert(txt,back){
     el.focus(); render();
   };
   row.appendChild(del);
-  // ปุ่มที่ใช้กับช่องพิมพ์อย่างเดียว ซ่อนตอนแก้ในตาราง แป้นที่เกาะล่างจอจะได้ไม่สูงเกิน
-  for(const b of row.children) if(/^(บรรทัดใหม่|สะบัด|"+ )/.test(b.textContent)) b.classList.add('textonly');
   // สองปุ่มนี้โผล่เฉพาะตอนแก้ในตาราง ซึ่งแป้นย้ายไปเกาะล่างจอ
   [['↶<span class="lbl"> ย้อน</span>', gridUndo, 'ย้อนการแก้ในตารางทีละขั้น'],
    ['✓<span class="lbl"> เสร็จ</span>', ()=>setEdit(false), 'เลิกแก้ในตาราง']].forEach(k=>{
@@ -1623,8 +1658,9 @@ const LOOKAHEAD = .25;   // ตั้งคิวล่วงหน้า (ว�
 const TICK_MS   = 40;    // รอบตรวจของตัวตั้งคิว
 
 let ac=null, graph=null, previewG=null, playing=false;
-let stepIdx=0, nextTime=0, endTime=Infinity, hiQ=[], schedTimer=0, lastEl=null, raf=0, startToken=0;
-let startStep=0, pausedAt=null, curStep=0;   // จุดเริ่มเล่น / จุดที่พักไว้ / ช่องที่กำลังดัง
+let pos=0, nextTime=0, endTime=Infinity, hiQ=[], schedTimer=0, lastEl=null, raf=0, startToken=0;   // pos = ลำดับใน seq
+let startStep=0, pausedAt=null, curStep=0;   // จุดเริ่มเล่น / จุดที่พักไว้ / ช่องที่กำลังดัง (เลขช่องใน steps)
+let pausedPos=0, curPos=0;                   // ลำดับใน seq ของสองตัวหลัง — พักในรอบกลับต้นแล้วเล่นต่อในรอบเดิม
 
 function ctxOn(){
   if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)();
@@ -1689,26 +1725,26 @@ function scheduler(){
   const horizon = ac.currentTime + LOOKAHEAD;
   let guard = 0;
   while(nextTime < horizon && guard++ < 1024){
-    if(stepIdx >= steps.length){
-      if(o.loop && steps.length) stepIdx = startStep;
+    if(pos >= seq.length){
+      if(o.loop && seq.length) pos = posOf(startStep);
       else { endTime = nextTime; return; }
     }
-    const st = steps[stepIdx];
+    const st = stepAt(pos);
     endTime = Infinity;
-    for(const x of notesOfStep(o,stepIdx,o.loop))
+    for(const x of notesOfStep(o,pos,o.loop))
       playTone(ac,graph.bus,freqOf(x.deg,x.oct,o),nextTime+x.dt,x.dur, o.inst+(x.kh?'_khuang':''));
     const spc=60/o.tempo;
     for(const e of percAt(o,st.cellIdx,st.si,st.n)){
       const pt = nextTime + e.dt*spc;
       playChing(ac,graph.ching,pt,e.kind==='chap');
     }
-    hiQ.push({t:nextTime,i:stepIdx});
+    hiQ.push({t:nextTime,i:seq[pos],p:pos});
     nextTime += slotDur(o,st);
-    stepIdx++;
+    pos++;
   }
 }
 
-async function start(from){
+async function start(from, at){
   render();
   const o=readOpts();
   if(!steps.length) return;
@@ -1719,7 +1755,7 @@ async function start(from){
   await ensureSamples(c, o.inst);
   if(token !== startToken) return;
   graph = buildGraph(c,o);
-  playing=true; stepIdx=begin; curStep=begin; pausedAt=null;
+  playing=true; pos = seq[at]===begin ? at : posOf(begin); curStep=begin; curPos=pos; pausedAt=null;
   hiQ=[]; endTime=Infinity; followAt=null; userScrollUntil=0;
   $('#pause').disabled=false; $('#pauseLbl').textContent=' พัก';
   nextTime = c.currentTime + .12;
@@ -1733,7 +1769,7 @@ function tick(){
   if(!playing) return;
   const now=ac.currentTime;
   let target=-1;
-  while(hiQ.length && hiQ[0].t<=now) target=hiQ.shift().i;
+  while(hiQ.length && hiQ[0].t<=now){ const h=hiQ.shift(); target=h.i; curPos=h.p; }
   if(target>=0){
     curStep = target;
     if(slotEls[target] && slotEls[target]!==lastEl){
@@ -1772,12 +1808,12 @@ function stop(){
 }
 function pause(){
   if(!playing) return;
-  pausedAt = curStep;                 // เล่นต่อจากช่องที่กำลังดังอยู่
+  pausedAt = curStep; pausedPos = curPos;   // เล่นต่อจากช่องที่กำลังดังอยู่ ในรอบเดียวกัน
   halt();
   $('#playLbl').textContent=' เล่นต่อ';
   $('#pause').disabled=true; $('#stop').disabled=false;
 }
-const playFrom = ()=> start(pausedAt !== null ? pausedAt : startStep);
+const playFrom = ()=> pausedAt !== null ? start(pausedAt, pausedPos) : start(startStep);
 
 /* ---------- บันทึก .wav ---------- */
 function encodeWav(buf){
@@ -1846,7 +1882,7 @@ async function exportWav(){
   sel.appendChild(cur);
   sel.onchange=()=>{
     const p=PRESETS.find(x=>x.id===sel.value); if(!p) return;
-    srcEl.value=p.text; $('#chan').value=p.chan;
+    srcEl.value=p.text; $('#chan').value=p.chan; $('#title').value = p.id==='blank' ? '' : p.name;
     $('#tempo').value=p.tempo; $('#tempoV').textContent=p.tempo;
     stop(); startStep=0; render(); autoSave();
   };
@@ -1946,12 +1982,13 @@ async function exportWav(){
       const el = $('#'+id); if(!el) continue;
       settings[id] = el.type==='checkbox' ? el.checked : el.value;
     }
-    return { app:'noinoi', version:1, variant:VARIANT, rev:SAMPLER_REV, notes:srcEl.value, settings };
+    return { app:'noinoi', version:1, variant:VARIANT, rev:SAMPLER_REV, title:$('#title').value, notes:srcEl.value, settings };
   }
 
   function applyState(d){
     if(d.app !== 'noinoi') throw new Error('ไม่ใช่ไฟล์ที่บันทึกจาก NoiNoi');
     if(typeof d.notes === 'string') srcEl.value = d.notes;
+    $('#title').value = typeof d.title === 'string' ? d.title : '';   // ไฟล์เก่าไม่มีชื่อเพลง ก็ล้างชื่อเดิมทิ้ง
     const st = Object.assign({}, d.settings || {});
     // มาจากชุดตัวอย่างเสียงคนละรุ่น อย่าเอาเสียงอ้างอิงเก่ามาทับค่าที่จูนไว้กับชุดใหม่
     if(d.rev !== SAMPLER_REV) delete st.base;
@@ -1967,11 +2004,13 @@ async function exportWav(){
     const d=new Date(), z=n=>String(n).padStart(2,'0');
     return 'noinoi-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes());
   };
+  // ชื่อไฟล์ — ใช้ชื่อเพลงถ้ามี ตัดอักขระที่ใช้ในชื่อไฟล์ไม่ได้ออก
+  const fileBase = () => $('#title').value.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim() || stamp();
 
   function saveFile(){
     const data = snapshot();
     data.saved = new Date().toISOString();
-    const name = stamp()+'.json';
+    const name = fileBase()+'.json';
     const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a = document.createElement('a');
     a.href=url; a.download=name;
@@ -2030,6 +2069,7 @@ async function exportWav(){
     el.addEventListener('input',  autoSave);
   }
   srcEl.addEventListener('input', autoSave);
+  $('#title').addEventListener('input', autoSave);
 
   $('#save').onclick = saveFile;
   $('#open').onclick = ()=>$('#file').click();
@@ -2041,14 +2081,15 @@ async function exportWav(){
   $('#wav').onclick  = exportWav;
 
   // PDF — ใช้หน้าพิมพ์ของเบราว์เซอร์ เลือก "บันทึกเป็น PDF" ได้ทุกเครื่อง ไม่ต้องฝังฟอนต์ไทยเอง
-  // หน้าตาบนกระดาษอยู่ใน @media print · ชื่อไฟล์ PDF มาจาก document.title จึงตั้งให้เหมือนไฟล์เซฟระหว่างพิมพ์
+  // หน้าตาบนกระดาษอยู่ใน @media print · หัวกระดาษเป็นชื่อเพลง ใต้ชื่อบอกอัตราจังหวะกับความเร็ว
+  // ชื่อไฟล์ PDF มาจาก document.title จึงตั้งให้เหมือนไฟล์เซฟระหว่างพิมพ์
   // ผูกกับ beforeprint ไม่ใช่ปุ่ม Ctrl+P จากเมนูเบราว์เซอร์ก็ได้หัวกระดาษเหมือนกัน
   const pageTitle = document.title;
   const optText = id => { const el = $(id); return el && el.selectedOptions[0] ? el.selectedOptions[0].textContent : ''; };
   window.addEventListener('beforeprint', ()=>{
-    $('#printHead').textContent = [optText('#key'), optText('#chan'), $('#tempo').value+' ห้อง/นาที']
-      .filter(Boolean).join(' · ');
-    document.title = stamp();
+    $('#printTitle').textContent = $('#title').value.trim();
+    $('#printMeta').textContent = [optText('#chan'), $('#tempo').value+' ห้อง/นาที'].filter(Boolean).join(' · ');
+    document.title = fileBase();
   });
   window.addEventListener('afterprint', ()=>{ document.title = pageTitle; });
   $('#pdf').onclick  = ()=>window.print();

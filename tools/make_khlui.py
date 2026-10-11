@@ -95,8 +95,8 @@ u"""function tokenizeCell(str){
 # ═════ E. notesOfStep — ช่องหนึ่งอาจมีหลายเสียง ═════
 rep(u"""// สแนปช็อตทั้งเพลง — ใช้ตอนบันทึก .wav และคำนวณความยาว""",
 u"""// เสียงที่ต้องเล่นในช่องนี้ — ช่องปกติได้ 1 เสียง, ลูกสะบัดได้หลายเสียงซอยเท่า ๆ กัน
-function notesOfStep(o,i,wrap){
-  const st=steps[i], d=slotDur(o,st), tail=noteDur(o,i,wrap)-d;   // tail = ช่องยืดเสียงที่ตามมา
+function notesOfStep(o,p,wrap){
+  const st=stepAt(p), d=slotDur(o,st), tail=noteDur(o,p,wrap)-d;   // tail = ช่องยืดเสียงที่ตามมา
   const out=[];
   if(st.sym.type==='note'){
     out.push({dt:0,dur:d+tail,deg:st.sym.deg,oct:st.sym.oct,kh:st.sym.kh});
@@ -115,16 +115,16 @@ function notesOfStep(o,i,wrap){
 
 // สแนปช็อตทั้งเพลง — ใช้ตอนบันทึก .wav และคำนวณความยาว""", "notesOfStep")
 
-rep(u"    if(st.sym.type==='note') notes.push({t,dur:noteDur(o,i),deg:st.sym.deg,oct:st.sym.oct});",
-    u"    for(const x of notesOfStep(o,i)) notes.push({t:t+x.dt,dur:x.dur,deg:x.deg,oct:x.oct,kh:x.kh});", "build")
+rep(u"    if(st.sym.type==='note') notes.push({t,dur:noteDur(o,p),deg:st.sym.deg,oct:st.sym.oct});",
+    u"    for(const x of notesOfStep(o,p)) notes.push({t:t+x.dt,dur:x.dur,deg:x.deg,oct:x.oct,kh:x.kh});", "build")
 
 rep(u"  for(const n of ev.notes) playTone(ctx,g.bus,freqOf(n.deg,n.oct,o),t0+n.t,n.dur,o.inst);",
     u"  for(const n of ev.notes)\n"
     u"    playTone(ctx,g.bus,freqOf(n.deg,n.oct,o),t0+n.t,n.dur, n.kh?'khlui_khuang':'khlui');", "schedAll")
 
 rep(u"""    if(st.sym.type==='note')
-      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,stepIdx,o.loop),o.inst);""",
-u"""    for(const x of notesOfStep(o,stepIdx,o.loop))
+      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,pos,o.loop),o.inst);""",
+u"""    for(const x of notesOfStep(o,pos,o.loop))
       playTone(ac,graph.bus,freqOf(x.deg,x.oct,o),nextTime+x.dt,x.dur, x.kh?'khlui_khuang':'khlui');""", "sched")
 
 # ═════ F. เสียง: เหลือขลุ่ยสองสีเสียง ═════
@@ -183,41 +183,12 @@ u"""function cellText(syms){
   // ห้องที่มีลูกสะบัดห้ามขยาย เพราะจะเปลี่ยนการซอยเสียงในวงเล็บ
   if((syms.length===1 || syms.length===2) && !syms.some(x=>x.type==='group')){""", "cellText")
 
-# ═════ I. แป้นโน้ต: ปุ่มสะบัด / ควง + วางเคอร์เซอร์ ═════
-rep(u"""function insert(txt){
-  if(gridKey(txt)) return;                 // แก้ในตารางอยู่ — ปุ่มบนแป้นเขียนลงช่องที่เลือกแทน
-  const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
-  el.value = el.value.slice(0,s) + txt + el.value.slice(e);
-  el.selectionStart = el.selectionEnd = s + txt.length;
-  el.focus(); render();
-}""",
-u"""function insert(txt,back){
-  if(gridKey(txt)) return;                 // แก้ในตารางอยู่ — ปุ่มบนแป้นเขียนลงช่องที่เลือกแทน
-  const el=srcEl, s=el.selectionStart, e=el.selectionEnd;
-  el.value = el.value.slice(0,s) + txt + el.value.slice(e);
-  el.selectionStart = el.selectionEnd = s + txt.length - (back||0);
-  el.focus(); render();
-}""", "insert")
-
-rep(u"""  [['–','-','ยืดเสียง'],['๐','0','หยุดเสียง'],['ห้องใหม่',' ',''],['บรรทัดใหม่','\\n','']].forEach(k=>{
-    const b=document.createElement('button');
-    b.className = k[0].length>1 ? 'key util' : 'key';
-    b.textContent=k[0]; if(k[2]) b.title=k[2];
-    b.onclick=()=>insert(k[1]);
-    row.appendChild(b);
-  });""",
-u"""  [['–','-','ยืดเสียง',0],
-   ['๐','0','หยุดเสียง',0],
-   ['สะบัด ( )','()','ลูกสะบัด — พิมพ์โน้ตหลายตัวไว้ในวงเล็บ ซอยอยู่ในช่องเดียว',1],
-   ['ควง *','*','เสียงควง — ความถี่เดิม แต่สีเสียงทึบกว่า',0],
-   ['ห้องใหม่',' ','',0],
-   ['บรรทัดใหม่','\\n','',0]].forEach(k=>{
-    const b=document.createElement('button');
-    b.className = k[0].length>1 ? 'key util' : 'key';
-    b.textContent=k[0]; if(k[2]) b.title=k[2];
-    b.onclick=()=>insert(k[1],k[3]);
-    row.appendChild(b);
-  });""", "keypad")
+# ═════ I. แป้นโน้ต: ปุ่มควง (แป้นใช้ตอนแก้ในตาราง — ลูกสะบัดพิมพ์ในช่องพิมพ์) ═════
+rep(u"""  [['–','-','ยืดเสียง'],['๐','0','หยุดเสียง'],['ห้องใหม่',' ',''],
+   ['↺ กลับต้น',' '+BACK_WORD,'ใส่/เอาออก กลับต้นท้ายห้องที่เลือก — จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน']].forEach(k=>{""",
+u"""  [['–','-','ยืดเสียง'],['๐','0','หยุดเสียง'],['ควง *','*','เสียงควง — ความถี่เดิม แต่สีเสียงทึบกว่า'],
+   ['ห้องใหม่',' ',''],
+   ['↺ กลับต้น',' '+BACK_WORD,'ใส่/เอาออก กลับต้นท้ายห้องที่เลือก — จบห้องนี้แล้วย้อนไปเล่นท่อนนี้ซ้ำอีกรอบ ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน']].forEach(k=>{""", "keypad")
 
 # ═════ J. readOpts / showKey ไม่มีช่องเลือกเครื่องแล้ว ═════
 rep(u"    inst  : $('#inst').value,", u"    inst  : 'khlui',", "opts")

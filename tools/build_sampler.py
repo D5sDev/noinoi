@@ -190,8 +190,8 @@ assert s.count(a4) == 3, s.count(a4)
 s = s.replace(a4, "else         refThai = +$('#base').value||%.1f;" % ref0)
 
 # ---------- 9. ค่าที่จำไว้จากชุดเสียงเก่าต้องไม่ทับเสียงอ้างอิงใหม่ ----------
-rep(u"    return { app:'noinoi', version:1, variant:VARIANT, notes:srcEl.value, settings };",
-    u"    return { app:'noinoi', version:1, variant:VARIANT, rev:SAMPLER_REV, notes:srcEl.value, settings };", "snap")
+rep(u"    return { app:'noinoi', version:1, variant:VARIANT, title:$('#title').value, notes:srcEl.value, settings };",
+    u"    return { app:'noinoi', version:1, variant:VARIANT, rev:SAMPLER_REV, title:$('#title').value, notes:srcEl.value, settings };", "snap")
 rep(u"    const st = d.settings || {};",
 u"""    const st = Object.assign({}, d.settings || {});
     // มาจากชุดตัวอย่างเสียงคนละรุ่น อย่าเอาเสียงอ้างอิงเก่ามาทับค่าที่จูนไว้กับชุดใหม่

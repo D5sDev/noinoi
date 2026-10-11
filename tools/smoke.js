@@ -152,20 +152,29 @@ Promise.resolve(btn('play').onclick()).then(() => {
   // เซฟแล้วโหลดกลับ ต้องได้ค่าเดิม
   const notesBefore = cache['#src'].value;
   const tempoBefore = cache['#tempo'].value;
+  cache['#title'].value = 'ลาวดวงเดือน';
   btn('save').onclick();
+  const saveName = doc._all.filter(e => e.download).pop();
+  if (!saveName || saveName.download !== 'ลาวดวงเดือน.json') die('ชื่อไฟล์เซฟควรเป็นชื่อเพลง: ' + (saveName && saveName.download));
   if (!lastBlob) die('กดเซฟแล้วไม่ได้ไฟล์');
   const json = lastBlob.parts.join('');
   const parsed = JSON.parse(json);
   if (parsed.app !== 'noinoi' || typeof parsed.notes !== 'string') die('ไฟล์ที่เซฟผิดรูปแบบ');
+  if (parsed.title !== 'ลาวดวงเดือน') die('ไฟล์ที่เซฟไม่มีชื่อเพลง');
   const nKeys = Object.keys(parsed.settings).length;
   ok('เซฟ — variant ' + parsed.variant + ' · ตั้งค่า ' + nKeys + ' รายการ · โน้ต ' + parsed.notes.length + ' ตัวอักษร');
 
   cache['#src'].value = 'ดดดด';
   cache['#tempo'].value = '999';
+  cache['#title'].value = 'เพลงอื่น';
   cache['#file'].fire('change', { target: { files: [{ _text: json }], value: 'x' } });
+  if (cache['#title'].value !== 'ลาวดวงเดือน') die('เปิดไฟล์แล้วชื่อเพลงไม่กลับมา: ' + cache['#title'].value);
+  const old = JSON.parse(json); delete old.title;            // ไฟล์รุ่นก่อนไม่มีชื่อเพลง
+  cache['#file'].fire('change', { target: { files: [{ _text: JSON.stringify(old) }], value: 'x' } });
+  if (cache['#title'].value !== '') die('เปิดไฟล์ที่ไม่มีชื่อเพลงแล้วชื่อเดิมค้างอยู่');
   if (cache['#src'].value !== notesBefore) die('เปิดไฟล์แล้วโน้ตไม่กลับมาเหมือนเดิม');
   if (cache['#tempo'].value !== tempoBefore) die('เปิดไฟล์แล้วความเร็วไม่กลับมาเหมือนเดิม');
-  ok('เปิดไฟล์ — โน้ตและการตั้งค่ากลับมาครบ');
+  ok('เปิดไฟล์ — โน้ต ชื่อเพลง และการตั้งค่ากลับมาครบ · ไฟล์เก่าไม่มีชื่อก็ล้างชื่อ · ชื่อไฟล์เซฟตามชื่อเพลง');
 
   // จำอัตโนมัติลง localStorage
   const lsKey = 'noinoi:' + parsed.variant;
@@ -192,13 +201,21 @@ Promise.resolve(btn('play').onclick()).then(() => {
     const title = doc.title;
     btn('pdf').onclick();
     if (printed !== 1) die('กด PDF แล้วไม่เรียก window.print()');
+    const song = doc.querySelector('#title'), keep = song.value;
+    song.value = '';
     (winLs.beforeprint || []).forEach(fn => fn());
-    const head = doc.querySelector('#printHead').textContent;
+    const head = doc.querySelector('#printMeta').textContent;
     if (!/ห้อง\/นาที/.test(head)) die('หัวกระดาษไม่มีความเร็ว: ' + head);
-    if (!/^noinoi-\d{8}-\d{4}$/.test(doc.title)) die('ชื่อไฟล์ PDF ไม่ตรงแบบ: ' + doc.title);
+    if (/ทาง/.test(head)) die('หัวกระดาษไม่ควรบอกทาง/คีย์: ' + head);
+    if (!/^noinoi-\d{8}-\d{4}$/.test(doc.title)) die('ไม่มีชื่อเพลง ชื่อไฟล์ PDF ควรเป็นวันเวลา: ' + doc.title);
+    song.value = 'ลาว/ดวง:เดือน';
+    (winLs.beforeprint || []).forEach(fn => fn());
+    if (doc.querySelector('#printTitle').textContent !== 'ลาว/ดวง:เดือน') die('หัวกระดาษไม่ใช่ชื่อเพลง');
+    if (doc.title !== 'ลาว ดวง เดือน') die('ชื่อไฟล์ PDF ควรเป็นชื่อเพลงที่ตัดอักขระต้องห้าม: ' + doc.title);
     (winLs.afterprint || []).forEach(fn => fn());
     if (!title || doc.title !== title) die('พิมพ์เสร็จแล้วชื่อหน้าไม่กลับ: ' + doc.title);
-    ok('PDF — เรียกหน้าพิมพ์ · หัวกระดาษ "' + head + '" · ชื่อไฟล์ตามวันเวลา');
+    song.value = keep;
+    ok('PDF — เรียกหน้าพิมพ์ · หัวกระดาษเป็นชื่อเพลง + "' + head + '" · ชื่อไฟล์ตามชื่อเพลง ไม่มีก็ตามวันเวลา');
   }
 
   // ขยับคีย์ของโน้ต — ขึ้นแล้วลงต้องได้ข้อความเดิม
@@ -229,6 +246,31 @@ Promise.resolve(btn('play').onclick()).then(() => {
     btn('tidy').onclick();
     if (src.value !== 'ดรมฟ ซลทดํ ดฺ-0-') die('จัดระเบียบโน้ตตัวเลขไม่เป็นอักษรไทย: ' + src.value);
     ok('โน้ตตัวเลข — 1–7 เล่นได้ · ขยับคีย์/จัดระเบียบแล้วเป็นอักษรไทย');
+  }
+
+  // กลับต้น — ท่อนเล่นสองรอบ (ท่อนเริ่มที่ต้นเพลงหรือถัดจากกลับต้นอันก่อน) · ล ในคำไม่ใช่โน้ต
+  {
+    const src = cache['#src'];
+    const voices = t => { src.value = t; src.fire('input'); return +(doc.querySelector('#meta').textContent.match(/(\d+) เสียง/) || [])[1]; };
+    if (voices('ดรมฟ ซลทด') !== 8) die('นับเสียงพื้นฐานผิด');
+    if (voices('ดรมฟ ซลทด กลับต้น') !== 16) die('กลับต้นท้ายเพลงควรเล่นทั้งเพลงสองรอบ');
+    if (voices('ดรมฟ\nกลับต้น\nซลทด') !== 12) die('กลับต้นบรรทัดเดี่ยวควรเกาะห้องท้ายบรรทัดก่อน');
+    if (voices('ดรมฟ กลับต้น\nซลทด (กลับต้น)') !== 16) die('สองท่อนควรซ้ำท่อนละรอบ');
+    doc._slots.length = 0;
+    voices('ดรมฟ กลับต้น ซลทด');
+    if (!doc._slots.some(e => e.className === 'foot' && /กลับต้น/.test(e.innerHTML))) die('ห้องที่มีกลับต้นไม่มีป้าย');
+    const two = 'ดรมฟ กลับต้น\nซลทด (กลับต้น)';
+    src.value = two; src.fire('input');
+    if (btn('trUp')) {
+      btn('trUp').onclick();
+      if (src.value !== 'รมฟซ กลับต้น\nลทดํร (กลับต้น)') die('ขยับคีย์แล้วคำกลับต้นเพี้ยน: ' + src.value);
+      btn('trDown').onclick();
+      if (src.value !== two) die('ขยับคีย์ขึ้นลงแล้วไม่ได้เดิม: ' + src.value);
+    }
+    doc.querySelector('#perLine').value = '8';
+    btn('tidy').onclick();
+    if (src.value !== 'ดรมฟ กลับต้น ซลทด กลับต้น') die('จัดระเบียบแล้วกลับต้นหาย: ' + src.value);
+    ok('กลับต้น — ท่อนเล่นสองรอบ · บรรทัดเดี่ยว/สองท่อน · มีป้ายบนตาราง · ขยับคีย์และจัดระเบียบไม่ทำคำเพี้ยน');
   }
 
   // เนื้อร้อง — บรรทัด " ไม่ถูกเล่น ไม่ถูกขยับคีย์ จัดระเบียบแล้วตามห้องของมันไป
@@ -342,6 +384,20 @@ Promise.resolve(btn('play').onclick()).then(() => {
     slots()[0].onclick(); keyBtn.onclick();
     if (src.value !== 'มซํ-0 ร---') die('ปุ่มบนแป้นตอนแก้ในตารางควรเขียนลงช่องที่เลือก: ' + JSON.stringify(src.value));
     ok('แก้ในตาราง — ช่อง + ต่อห้องใหม่ · Backspace ล้างช่อง · Ctrl+Z ย้อน · ปุ่มบนแป้นเขียนลงตาราง');
+
+    // ↺ กลับต้น บนแป้น — ใส่ท้ายห้องของช่องที่เลือก กดซ้ำเอาออก · ห้องสุดท้ายมีกลับต้นแล้ว ช่อง + ขึ้นบรรทัดใหม่หลังคำ
+    const backBtn = doc._all.find(e => e.textContent === '↺ กลับต้น');
+    if (!backBtn) die('แป้นไม่มีปุ่ม ↺ กลับต้น');
+    const keep2 = src.value;
+    slots()[1].onclick(); fresh(() => backBtn.onclick());
+    if (src.value !== 'มซํ-0 กลับต้น ร---') die('ใส่กลับต้นในตารางไม่ตรง: ' + JSON.stringify(src.value));
+    slots()[1].onclick(); fresh(() => backBtn.onclick());
+    if (src.value !== keep2) die('กดกลับต้นซ้ำควรเอาออก: ' + JSON.stringify(src.value));
+    slots()[4].onclick(); fresh(() => backBtn.onclick());
+    ghost().onclick(); fresh(() => kd('ล'));
+    if (src.value !== 'มซํ-0 ร--- กลับต้น\nล---') die('ต่อห้องหลังกลับต้นไม่ขึ้นบรรทัดใหม่: ' + JSON.stringify(src.value));
+    fresh(() => { src.value = keep2; src.fire('input'); });
+    ok('แก้ในตาราง — ปุ่ม ↺ ใส่/เอาออกกลับต้นท้ายห้อง · ต่อห้องหลังกลับต้นขึ้นบรรทัดใหม่');
 
     // เนื้อร้อง: บรรทัดที่ยังไม่มีเนื้อมีแถวว่างให้แตะ พิมพ์แล้วเว้นวรรคไปโน้ตถัดไป
     fresh(() => { src.value = 'ดรมฟ ซ---'; src.fire('input'); });
