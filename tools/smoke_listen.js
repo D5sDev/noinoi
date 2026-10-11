@@ -350,8 +350,9 @@ el('send').fire('click');
 const stored = sandbox.localStorage.getItem('noinoi:thai');
 if (!stored) die('กดส่งต่อแล้วไม่ได้เขียนลง localStorage');
 if (JSON.parse(stored).notes !== want) die('โน้ตที่ส่งต่อไม่ตรง');
+if (JSON.parse(stored).title !== 'test') die('ไม่มี .lyr/@T ชื่อเพลงควรเป็นชื่อไฟล์ ได้ ' + JSON.parse(stored).title);
 if (loc.href !== 'thai.html') die('ควรพาไป thai.html ได้ ' + loc.href);
-ok('ส่งต่อ — เขียน noinoi:thai แล้วพาไป ' + loc.href);
+ok('ส่งต่อ — เขียน noinoi:thai แล้วพาไป ' + loc.href + ' · ชื่อเพลงจากชื่อไฟล์');
 
 el('dest').value = 'khlui';
 el('send').fire('click');
@@ -378,6 +379,7 @@ if (!kon.length || kon[0].innerHTML.indexOf('ช่อง 4') < 0) die('คว�
 ok('format 0 — แยก 3 ช่อง (เบส ทำนอง กลอง) เลือกช่อง 4 เป็นทำนอง');
 if (el('out').value !== WANT_LYR)
   die('เนื้อร้องจาก .kar ไม่ตรง\n    ได้   ' + JSON.stringify(el('out').value) + '\n    ต้องการ ' + JSON.stringify(WANT_LYR));
+if (el('title').value !== 'Song') die('.kar ควรได้ชื่อเพลงจาก @T ได้ ' + el('title').value);
 if (el('stats').innerHTML.indexOf('เนื้อร้อง <b>8</b>') < 0) die('ควรนับเนื้อร้องได้ 8 พยางค์: ' + el('stats').innerHTML);
 if (el('stats').innerHTML.indexOf('ห่างจากโน้ต') >= 0) die('ไม่ควรมีคำที่ห่างจากโน้ต: ' + el('stats').innerHTML);
 ok('เนื้อร้องใน .kar — ' + el('msg').textContent.split(' · ').pop() + ' · ข้ามโน้ตที่ไม่มีคำเป็น _ · คำมาก่อนโน้ตนิดหน่อยยังลงถูกตัว');
@@ -386,7 +388,8 @@ ok('เนื้อร้องใน .kar — ' + el('msg').textContent.split('
 open([{ name: 'x.mid', _buf: karaoke(false) }, { name: 'x.lyr', _buf: lyrFile() }, { name: 'x.cur', _buf: curFile() }]);
 if (el('out').value !== WANT_LYR)
   die('เนื้อร้องจาก .lyr/.cur ไม่ตรง\n    ได้   ' + JSON.stringify(el('out').value) + '\n    ต้องการ ' + JSON.stringify(WANT_LYR));
-ok('ชุด NCN .lyr/.cur — รวมสระกับวรรณยุกต์เข้าพยางค์ได้ถูก (เย็น ฉ่ำ จริง) วางตรงโน้ตเหมือน .kar');
+if (el('title').value !== 'ทดสอบ') die('ชุด NCN ควรได้ชื่อเพลงจากบรรทัด 1 ของ .lyr ได้ ' + el('title').value);
+ok('ชุด NCN .lyr/.cur — รวมสระกับวรรณยุกต์เข้าพยางค์ได้ถูก (เย็น ฉ่ำ จริง) วางตรงโน้ตเหมือน .kar · ชื่อเพลงจาก .lyr');
 
 // เปลี่ยนกริดแล้วต้องวางใหม่ — 2 ช่อง/ห้อง โน้ตยังครบ คำยังตามโน้ตตัวเดิม
 el('spc').value = '2'; el('spc').fire('change');
@@ -398,16 +401,21 @@ ok('เปลี่ยนช่องต่อห้อง — วางเน�
 el('dest').value = 'thai';
 el('send').fire('click');
 if (JSON.parse(sandbox.localStorage.getItem('noinoi:thai')).notes !== WANT_LYR) die('ส่งต่อแล้วเนื้อร้องไม่ไปด้วย');
-ok('ส่งต่อ — บรรทัดเนื้อร้องไปถึงหน้าเล่นครบ');
+el('title').value = '  ลาวดวงเดือน ';                         // แก้ชื่อเองก่อนส่ง
+el('send').fire('click');
+if (JSON.parse(sandbox.localStorage.getItem('noinoi:thai')).title !== 'ลาวดวงเดือน') die('ชื่อที่แก้เองไม่ไปกับการส่งต่อ');
+ok('ส่งต่อ — บรรทัดเนื้อร้องไปถึงหน้าเล่นครบ · ชื่อเพลงที่แก้เองไปด้วย');
 
 // เปิด .mid ใหม่โดยไม่มี .lyr — เนื้อร้องเก่าต้องหาย
 open([{ name: 'y.mid', _buf: karaoke(false) }]);
 if (el('out').value.indexOf('""') >= 0) die('เปิด .mid ใหม่แล้วเนื้อร้องเก่ายังค้าง');
+if (el('title').value !== 'y') die('เปิด .mid ใหม่แล้วชื่อเพลงเก่ายังค้าง: ' + el('title').value);
 // ลาก .lyr มาทีหลังโดยไม่มี .cur — บอกว่าขาดไฟล์
 open([{ name: 'y.lyr', _buf: lyrFile() }]);
 if (el('msg').className.indexOf('err') < 0) die('มี .lyr แต่ไม่มี .cur ควรเตือน');
 open([{ name: 'y.cur', _buf: curFile() }]);
 if (el('out').value !== WANT_LYR) die('ลาก .cur ตามมาทีหลังแล้วเนื้อร้องไม่ขึ้น');
+if (el('title').value !== 'ทดสอบ') die('ลาก .lyr มาทีหลังควรได้ชื่อเพลงจาก .lyr ได้ ' + el('title').value);
 ok('เปิด .mid ใหม่ล้างเนื้อร้องเก่า · ลาก .lyr แล้ว .cur ตามมาทีหลังก็ได้');
 
 console.log('  ✓ ผ่านทั้งหมด');

@@ -143,11 +143,12 @@ textarea#out:focus{border-color:var(--gold-dim)}
 .field{display:grid;gap:5px}
 .field > label{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:8px}
 .field > label b{color:var(--gold);font-variant-numeric:tabular-nums}
-select,input[type=number]{
+select,input[type=number],input[type=text]{
   font:inherit;font-size:14px;width:100%;
   background:#100e0a;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none;
 }
-select:focus,input[type=number]:focus{border-color:var(--gold-dim)}
+select:focus,input[type=number]:focus,input[type=text]:focus{border-color:var(--gold-dim)}
+input#title{font-size:16px;font-weight:600;margin-bottom:10px}
 input[type=range]{width:100%;accent-color:var(--gold);background:transparent}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .checks{display:flex;flex-wrap:wrap;gap:14px;padding-top:2px}
@@ -201,7 +202,7 @@ details[open] summary{margin-bottom:12px}
   .bar .lbl{display:none}
   .fileops .btn{color:var(--fg)}
 
-  select,input[type=number]{font-size:16px}
+  select,input[type=number],input[type=text]{font-size:16px}
   .row2{grid-template-columns:1fr}
   textarea#out{font-size:17px;line-height:1.95;min-height:190px}
   .drop{padding:20px 14px}
@@ -278,9 +279,10 @@ details[open] summary{margin-bottom:12px}
       <h2>โน้ตไทยที่แปลงได้</h2>
       <button class="btn ghost sm" id="copy" disabled>คัดลอก</button>
     </div>
+    <input type="text" id="title" placeholder="ชื่อเพลง" maxlength="120" autocomplete="off" spellcheck="false" title="ชื่อเพลง — ส่งต่อและเซฟไปพร้อมโน้ต ดึงจาก .lyr / .kar / ชื่อไฟล์ให้ก่อน แก้ได้">
     <textarea id="out" spellcheck="false" placeholder="ผลลัพธ์จะขึ้นที่นี่ · แก้ไขต่อได้เลย"></textarea>
     <div class="stats" id="stats"></div>
-    <p class="hint">แก้ในช่องนี้ได้ตามใจ ปุ่ม ฟัง / ส่งต่อ / เซฟ ใช้ข้อความที่เห็นอยู่ตรงนี้เสมอ</p>
+    <p class="hint">แก้ในช่องนี้ได้ตามใจ ปุ่ม ฟัง / ส่งต่อ / เซฟ ใช้ข้อความและชื่อเพลงที่เห็นอยู่ตรงนี้เสมอ</p>
   </section>
 
   <section class="panel">
@@ -723,6 +725,8 @@ function toThai(grid, cfg, majRoot, syl){
 // สองแหล่ง: .lyr + .cur ของชุด NCN (เวลาต่อตัวอักษร) หรือ meta เนื้อร้องที่ฝังในไฟล์ .kar (เวลาต่อพยางค์)
 // .lyr: บรรทัด 1 ชื่อเพลง 2 ศิลปิน 3 คีย์ 4 ว่าง ที่เหลือคือเนื้อร้อง
 // .cur: uint16 LE หนึ่งค่าต่อหนึ่งตัวอักษร รวมตัวขึ้นบรรทัด หน่วย 1/24 จังหวะ
+// บรรทัด 1 ของ .lyr คือชื่อเพลง
+const lyrTitle = text => (text.replace(/^\uFEFF/,'').split(/\r\n|\n|\r/)[0] || '').trim();
 function lyrBody(text){
   const L = text.replace(/^﻿/,'').split(/\r\n|\n|\r/).slice(4);
   while(L.length && !L[L.length-1].trim()) L.pop();
@@ -761,6 +765,12 @@ function ncnUnits(body, cur, ppq){
 
 // ใช้ meta 0x05 ถ้ามี ไม่มีค่อยใช้ 0x01 ที่ไม่ใช่หัวไฟล์ @ — ต้องมีหลายอัน จะได้ไม่เอาข้อความลิขสิทธิ์มาเป็นเนื้อร้อง
 // เอาแทร็กเดียวที่มีมากที่สุด บางไฟล์ใส่เนื้อร้องซ้ำสองแทร็ก รวมกันแล้วคำจะเบิ้ล
+// .kar เก็บชื่อเพลงเป็นข้อความ @T ตัวแรก (ตัวที่สองมักเป็นชื่อศิลปิน)
+function karTitle(mid){
+  const t = mid.tracks.flatMap(tr => tr.texts).filter(e => /^@T/.test(e.text)).sort((a,b) => a.tick-b.tick)[0];
+  return t ? t.text.slice(2).trim() : '';
+}
+
 function karUnits(mid){
   const most = list => list.reduce((a,b) => b.length > a.length ? b : a, []);
   let ev = most(mid.tracks.map(t => t.lyrics));
@@ -933,7 +943,7 @@ function auditionTrack(ti){
 
 /* ══════════ 7. UI ══════════ */
 let mid = null, tmap = null, stats = [], sel = -1, result = null, srcTempo = 120;
-const ncn = {lyr:null, cur:null};      // เนื้อร้องชุด NCN ที่เปิดมาพร้อม .mid
+const ncn = {lyr:null, cur:null, title:''};   // เนื้อร้องชุด NCN ที่เปิดมาพร้อม .mid · title = บรรทัด 1 ของ .lyr
 
 const NOTEVAL = {1:'ตัวกลม',2:'ตัวขาว',4:'ตัวดำ',8:'เขบ็ต 1 ชั้น',16:'เขบ็ต 2 ชั้น',32:'เขบ็ต 3 ชั้น',64:'เขบ็ต 4 ชั้น'};
 
@@ -1018,6 +1028,8 @@ function loadBuffer(ab, fname){
   }
   tmap = tempoMap(mid);
   stats = buildParts(mid);
+  // ชื่อเพลง: .lyr ก่อน ไม่มีค่อยดู @T ใน .kar ไม่มีอีกใช้ชื่อไฟล์
+  $('#title').value = ncn.title || karTitle(mid) || fname.replace(/\.[^.]+$/,'');
 
   // ความเร็วต้นฉบับ กับ จังหวะต่อห้อง ที่ทำให้ค่าอยู่ในช่วงที่หน้าเล่นรับได้
   srcTempo = 60e6/tmap[0].us;
@@ -1125,6 +1137,7 @@ function buildSave(){
   const dest = $('#dest').value;
   return {
     app:'noinoi', version:1, variant:dest,
+    title: $('#title').value.trim(),
     notes: $('#out').value,
     settings:{
       tempo:String(cfg.tempo), inst:'khlui', tuning:'12tet',
@@ -1147,8 +1160,10 @@ function doSave(){
   const d = buildSave();
   d.saved = new Date().toISOString();
   const t = new Date(), z = n => String(n).padStart(2,'0');
-  const name = 'noinoi-midi-' + t.getFullYear()+z(t.getMonth()+1)+z(t.getDate())
-             + '-' + z(t.getHours())+z(t.getMinutes()) + '.json';
+  // ใช้ชื่อเพลงเป็นชื่อไฟล์เหมือนหน้าเล่น ตัดอักขระที่ใช้ในชื่อไฟล์ไม่ได้ออก
+  const base = d.title.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
+  const name = (base || 'noinoi-midi-' + t.getFullYear()+z(t.getMonth()+1)+z(t.getDate())
+             + '-' + z(t.getHours())+z(t.getMinutes())) + '.json';
   const url = URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
   const a = document.createElement('a');
   a.href = url; a.download = name;
@@ -1200,11 +1215,12 @@ function init(){
       r.readAsArrayBuffer(f);
     });
     function done(){
-      const lyr = got.lyr ? lyrBody(decodeThai(new Uint8Array(got.lyr.buf))) : null;
+      const lyrText = got.lyr ? decodeThai(new Uint8Array(got.lyr.buf)) : null;
+      const lyr = lyrText ? lyrBody(lyrText) : null;
       const cur = got.cur ? parseCur(got.cur.buf) : null;
-      if(got.mid){ ncn.lyr = lyr; ncn.cur = cur; loadBuffer(got.mid.buf, got.mid.name); return; }
+      if(got.mid){ ncn.lyr = lyr; ncn.cur = cur; ncn.title = lyrText ? lyrTitle(lyrText) : ''; loadBuffer(got.mid.buf, got.mid.name); return; }
       if(!mid){ msg('เปิดไฟล์ .mid ก่อน หรือลาก .mid .lyr .cur มาพร้อมกันทั้งชุด', 'err'); return; }
-      if(lyr) ncn.lyr = lyr;
+      if(lyr){ ncn.lyr = lyr; ncn.title = lyrTitle(lyrText); if(ncn.title) $('#title').value = ncn.title; }
       if(cur) ncn.cur = cur;
       convert();
       msg(ncn.lyr && ncn.cur ? 'ได้เนื้อร้องจาก .lyr/.cur วางใต้โน้ตให้แล้ว'
