@@ -599,9 +599,12 @@ let steps=[];                      // ทุกช่องของทั้ง
 const slotDur = (o,st) => (60/o.tempo)/st.n;
 
 // ความยาวโน้ต = ช่องตัวเอง + ช่องยืดเสียง (-) ที่ตามมา
-function noteDur(o,i){
-  let d = slotDur(o,steps[i]);
-  for(let j=i+1;j<steps.length && steps[j].sym.type==='tie';j++) d += slotDur(o,steps[j]);
+// wrap = เล่นวน — ยืดถึงท้ายเพลงแล้วต่อด้วย - ต้นรอบใหม่ (จากจุดเริ่มเล่น) เสียงจะไม่ขาดตอนวนกลับ
+function noteDur(o,i,wrap){
+  let d = slotDur(o,steps[i]), j = i+1;
+  for(;j<steps.length && steps[j].sym.type==='tie';j++) d += slotDur(o,steps[j]);
+  if(wrap && j===steps.length)
+    for(j=startStep; j<i && steps[j].sym.type==='tie'; j++) d += slotDur(o,steps[j]);
   return d;
 }
 
@@ -1555,7 +1558,7 @@ function scheduler(){
     const st = steps[stepIdx];
     endTime = Infinity;
     if(st.sym.type==='note')
-      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,stepIdx),o.inst);
+      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,stepIdx,o.loop),o.inst);
     const spc=60/o.tempo;
     for(const e of percAt(o,st.cellIdx,st.si,st.n)){
       const pt = nextTime + e.dt*spc;

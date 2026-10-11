@@ -95,8 +95,8 @@ u"""function tokenizeCell(str){
 # ═════ E. notesOfStep — ช่องหนึ่งอาจมีหลายเสียง ═════
 rep(u"""// สแนปช็อตทั้งเพลง — ใช้ตอนบันทึก .wav และคำนวณความยาว""",
 u"""// เสียงที่ต้องเล่นในช่องนี้ — ช่องปกติได้ 1 เสียง, ลูกสะบัดได้หลายเสียงซอยเท่า ๆ กัน
-function notesOfStep(o,i){
-  const st=steps[i], d=slotDur(o,st), tail=noteDur(o,i)-d;   // tail = ช่องยืดเสียงที่ตามมา
+function notesOfStep(o,i,wrap){
+  const st=steps[i], d=slotDur(o,st), tail=noteDur(o,i,wrap)-d;   // tail = ช่องยืดเสียงที่ตามมา
   const out=[];
   if(st.sym.type==='note'){
     out.push({dt:0,dur:d+tail,deg:st.sym.deg,oct:st.sym.oct,kh:st.sym.kh});
@@ -123,8 +123,8 @@ rep(u"  for(const n of ev.notes) playTone(ctx,g.bus,freqOf(n.deg,n.oct,o),t0+n.t
     u"    playTone(ctx,g.bus,freqOf(n.deg,n.oct,o),t0+n.t,n.dur, n.kh?'khlui_khuang':'khlui');", "schedAll")
 
 rep(u"""    if(st.sym.type==='note')
-      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,stepIdx),o.inst);""",
-u"""    for(const x of notesOfStep(o,stepIdx))
+      playTone(ac,graph.bus,freqOf(st.sym.deg,st.sym.oct,o),nextTime,noteDur(o,stepIdx,o.loop),o.inst);""",
+u"""    for(const x of notesOfStep(o,stepIdx,o.loop))
       playTone(ac,graph.bus,freqOf(x.deg,x.oct,o),nextTime+x.dt,x.dur, x.kh?'khlui_khuang':'khlui');""", "sched")
 
 # ═════ F. เสียง: เหลือขลุ่ยสองสีเสียง ═════

@@ -600,9 +600,12 @@ let steps=[];                      // ทุกช่องของทั้ง
 const slotDur = (o,st) => (60/o.tempo)/st.n;
 
 // ความยาวโน้ต = ช่องตัวเอง + ช่องยืดเสียง (-) ที่ตามมา
-function noteDur(o,i){
-  let d = slotDur(o,steps[i]);
-  for(let j=i+1;j<steps.length && steps[j].sym.type==='tie';j++) d += slotDur(o,steps[j]);
+// wrap = เล่นวน — ยืดถึงท้ายเพลงแล้วต่อด้วย - ต้นรอบใหม่ (จากจุดเริ่มเล่น) เสียงจะไม่ขาดตอนวนกลับ
+function noteDur(o,i,wrap){
+  let d = slotDur(o,steps[i]), j = i+1;
+  for(;j<steps.length && steps[j].sym.type==='tie';j++) d += slotDur(o,steps[j]);
+  if(wrap && j===steps.length)
+    for(j=startStep; j<i && steps[j].sym.type==='tie'; j++) d += slotDur(o,steps[j]);
   return d;
 }
 
@@ -630,8 +633,8 @@ function percAt(o,ci,si,n){
 }
 
 // เสียงที่ต้องเล่นในช่องนี้ — ช่องปกติได้ 1 เสียง, ลูกสะบัดได้หลายเสียงซอยเท่า ๆ กัน
-function notesOfStep(o,i){
-  const st=steps[i], d=slotDur(o,st), tail=noteDur(o,i)-d;   // tail = ช่องยืดเสียงที่ตามมา
+function notesOfStep(o,i,wrap){
+  const st=steps[i], d=slotDur(o,st), tail=noteDur(o,i,wrap)-d;   // tail = ช่องยืดเสียงที่ตามมา
   const out=[];
   if(st.sym.type==='note'){
     out.push({dt:0,dur:d+tail,deg:st.sym.deg,oct:st.sym.oct,kh:st.sym.kh});
@@ -1665,7 +1668,7 @@ function scheduler(){
     }
     const st = steps[stepIdx];
     endTime = Infinity;
-    for(const x of notesOfStep(o,stepIdx))
+    for(const x of notesOfStep(o,stepIdx,o.loop))
       playTone(ac,graph.bus,freqOf(x.deg,x.oct,o),nextTime+x.dt,x.dur, o.inst+(x.kh?'_khuang':''));
     const spc=60/o.tempo;
     for(const e of percAt(o,st.cellIdx,st.si,st.n)){
