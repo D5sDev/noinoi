@@ -54,6 +54,7 @@ const doc = {
   createElement: () => { created++; const e = mkEl('_'); doc._slots.push(e); doc._all.push(e); return e; },
   addEventListener(ev, fn) { (doc._ls[ev] || (doc._ls[ev] = [])).push(fn); },
   activeElement: null, body: mkEl('body'), _slots: [], _all: [], _ls: {},
+  title: (html.match(/<title>([^<]*)</) || [])[1],
 };
 
 // ---- Web Audio จำลอง ----
@@ -118,7 +119,10 @@ sandbox.window = sandbox;
 sandbox.window.AudioContext = Ctx;
 sandbox.window.innerHeight = 900;
 sandbox.window.scrollY = 0;
-sandbox.window.addEventListener = () => {};
+const winLs = {};
+sandbox.window.addEventListener = (ev, fn) => { (winLs[ev] || (winLs[ev] = [])).push(fn); };
+let printed = 0;
+sandbox.window.print = () => { printed++; };
 sandbox.window.scrollTo = () => {};
 
 const name = file.split(/[\\/]/).pop();
@@ -181,6 +185,20 @@ Promise.resolve(btn('play').onclick()).then(() => {
     const after = cache['#base'].value;
     if (String(before) === String(after)) die('เปลี่ยนไปคีย์สากลแล้วเสียงอ้างอิงไม่สลับตาม');
     ok('คีย์สากล → เสียงอ้างอิง ' + before + ' → ' + after + ' Hz');
+  }
+
+  // PDF — ปุ่มเรียกหน้าพิมพ์ · beforeprint เติมหัวกระดาษ ตั้งชื่อไฟล์ แล้ว afterprint คืนชื่อหน้าเดิม
+  if (btn('pdf')) {
+    const title = doc.title;
+    btn('pdf').onclick();
+    if (printed !== 1) die('กด PDF แล้วไม่เรียก window.print()');
+    (winLs.beforeprint || []).forEach(fn => fn());
+    const head = doc.querySelector('#printHead').textContent;
+    if (!/ห้อง\/นาที/.test(head)) die('หัวกระดาษไม่มีความเร็ว: ' + head);
+    if (!/^noinoi-\d{8}-\d{4}$/.test(doc.title)) die('ชื่อไฟล์ PDF ไม่ตรงแบบ: ' + doc.title);
+    (winLs.afterprint || []).forEach(fn => fn());
+    if (!title || doc.title !== title) die('พิมพ์เสร็จแล้วชื่อหน้าไม่กลับ: ' + doc.title);
+    ok('PDF — เรียกหน้าพิมพ์ · หัวกระดาษ "' + head + '" · ชื่อไฟล์ตามวันเวลา');
   }
 
   // ขยับคีย์ของโน้ต — ขึ้นแล้วลงต้องได้ข้อความเดิม

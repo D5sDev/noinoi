@@ -256,8 +256,9 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
     background:rgba(20,17,13,.98);
     border-top:1px solid var(--line);
   }
-  /* สองกลุ่มกว้างเท่ากัน ปุ่มในแต่ละกลุ่มก็เท่ากัน ผลคือทั้งหกปุ่มเท่ากันหมด */
-  .bar .transport,.bar .fileops{flex:1 1 0;min-width:0;gap:6px;flex-wrap:nowrap}
+  /* กลุ่มกว้างตามจำนวนปุ่ม (3 กับ 4) ปุ่มในแต่ละกลุ่มก็เท่ากัน ผลคือทั้งเจ็ดปุ่มเท่ากันหมด */
+  .bar .transport,.bar .fileops{flex:3 1 0;min-width:0;gap:6px;flex-wrap:nowrap}
+  .bar .fileops{flex-grow:4}
   .bar .btn{flex:1 1 0;min-width:0;padding:11px 0;font-size:16px;line-height:1}
   .bar .lbl{display:none}              /* เหลือแค่ไอคอน กดง่ายและไม่กินที่ */
   .fileops .btn{color:var(--fg)}
@@ -298,6 +299,30 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
     max-height:max(200px, calc(100svh - var(--toph, 60px) - 190px - env(safe-area-inset-bottom, 0px)));
   }
 }
+
+/* ---------- พิมพ์ / PDF — เหลือแค่บรรทัดโน้ต ขาวดำ บรรทัดละ 8 ห้อง ---------- */
+.printhead{display:none}
+@page{size:A4;margin:12mm}
+@media print{
+  html,body{background:#fff !important;color:#000}
+  body{padding:0 !important}                       /* ที่ว่างใต้หัวเรื่องตั้งจาก init() */
+  .top,main > .panel:not(.wide),.panel-head,.cell.ghost,.lyr.ph,.lyrin{display:none !important}
+  main{display:block;max-width:none;padding:0}
+  .panel{background:none;border:0;padding:0}
+  .printhead{display:block;font-size:11pt;color:#333;margin-bottom:4mm}
+  .score{max-height:none;overflow:visible;gap:3mm}
+  .line{break-inside:avoid;gap:4px}
+  .linenum{color:#888;border:0;flex-basis:18px}
+  .cells{grid-template-columns:repeat(8,1fr);gap:0}
+  .cell{border:0;border-right:1px solid #bbb;border-radius:0;background:none;padding:0 2px}
+  .cells .cell:nth-child(8n+1){border-left:1px solid #bbb}
+  .slot,.slot.on,.slot.sel,.slot.start,.slot.start.on{min-width:0;height:auto;padding:1px 0;background:none;color:#000;
+    font-size:14pt;transform:none;box-shadow:none;outline:0}
+  .slot.tie,.slot.rest{color:#000}
+  .cell .foot{height:auto;font-size:7pt;color:#888}
+  .cell .foot .chap{color:#888}
+  .cell .lyr,.cell:has(.slot.on) .lyr:not(.syl),.lyr.syl .on{color:#000;font-size:10pt}
+}
 </style>
 </head>
 <body>
@@ -326,6 +351,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
       <button id="save" class="btn ghost" title="บันทึกโน้ตพร้อมการตั้งค่าเป็นไฟล์ .json">💾<span class="lbl"> เซฟ</span></button>
       <button id="open" class="btn ghost" title="เปิดไฟล์โน้ตที่เคยบันทึกไว้">📂<span class="lbl"> เปิด</span></button>
       <button id="wav" class="btn ghost" title="บันทึกเสียงเป็นไฟล์ .wav">⬇<span class="lbl"> .wav</span></button>
+      <button id="pdf" class="btn ghost" title="บันทึกบรรทัดโน้ตเป็น PDF — เลือก &quot;บันทึกเป็น PDF&quot; ในหน้าพิมพ์">📄<span class="lbl"> PDF</span></button>
       <input type="file" id="file" accept=".json,application/json" hidden>
     </div>
   </div>
@@ -454,6 +480,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
         <button class="btn sm" id="editGrid" title="พิมพ์โน้ตและเนื้อร้องลงตารางนี้ได้เลย แป้นโน้ตจะย้ายมาเกาะล่างจอ">✎ แก้ในตาราง</button>
       </div>
     </div>
+    <div class="printhead" id="printHead"></div>
     <div class="score" id="score"></div>
   </section>
 
@@ -1818,12 +1845,15 @@ async function exportWav(){
     refreshUI();
   }
 
+  const stamp = () => {
+    const d=new Date(), z=n=>String(n).padStart(2,'0');
+    return 'noinoi-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes());
+  };
+
   function saveFile(){
     const data = snapshot();
     data.saved = new Date().toISOString();
-    const d=new Date(), z=n=>String(n).padStart(2,'0');
-    const name = 'noinoi-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())
-               + '-'+z(d.getHours())+z(d.getMinutes())+'.json';
+    const name = stamp()+'.json';
     const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a = document.createElement('a');
     a.href=url; a.download=name;
@@ -1891,6 +1921,19 @@ async function exportWav(){
   $('#pause').onclick = pause;
   $('#stop').onclick  = stop;
   $('#wav').onclick  = exportWav;
+
+  // PDF — ใช้หน้าพิมพ์ของเบราว์เซอร์ เลือก "บันทึกเป็น PDF" ได้ทุกเครื่อง ไม่ต้องฝังฟอนต์ไทยเอง
+  // หน้าตาบนกระดาษอยู่ใน @media print · ชื่อไฟล์ PDF มาจาก document.title จึงตั้งให้เหมือนไฟล์เซฟระหว่างพิมพ์
+  // ผูกกับ beforeprint ไม่ใช่ปุ่ม Ctrl+P จากเมนูเบราว์เซอร์ก็ได้หัวกระดาษเหมือนกัน
+  const pageTitle = document.title;
+  const optText = id => { const el = $(id); return el && el.selectedOptions[0] ? el.selectedOptions[0].textContent : ''; };
+  window.addEventListener('beforeprint', ()=>{
+    $('#printHead').textContent = [optText('#key'), optText('#chan'), $('#tempo').value+' ห้อง/นาที']
+      .filter(Boolean).join(' · ');
+    document.title = stamp();
+  });
+  window.addEventListener('afterprint', ()=>{ document.title = pageTitle; });
+  $('#pdf').onclick  = ()=>window.print();
   $('#tidy').onclick = ()=>{ tidy(); autoSave(); };
 
   const selN = $('#startNote');
