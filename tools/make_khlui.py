@@ -32,7 +32,7 @@ u"""    <a href="thai.html">โน้ตไทย</a>
 # ═════ B. CSS เพิ่มเติมสำหรับลูกสะบัดและเสียงควง ═════
 rep(u".slot.tie{color:#6b5c46;font-size:15px}",
 u""".slot.tie{color:#6b5c46;font-size:15px}
-.slot.grp{font-size:12.5px;letter-spacing:-.5px;color:var(--gold)}
+.slot.grp{font-size:12.5px;letter-spacing:-.5px;color:var(--gold);min-width:max-content}
 .slot.on.grp{color:#1d1608}
 .kh{font-style:normal;font-size:10px;color:var(--gold);vertical-align:super;margin-left:1px}
 .slot.on .kh{color:#1d1608}""", "css")

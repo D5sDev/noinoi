@@ -147,21 +147,23 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
   flex:0 0 26px;display:grid;place-items:center;
   font-size:11.5px;color:var(--gold-dim);border-right:1px solid var(--line);
 }
-.cells{display:flex;gap:6px;flex-wrap:wrap}
+/* บรรทัดละ 8 ห้องเท่ากันทุกบรรทัด ห้องตรงกันเป็นคอลัมน์ — จอแคบลดเป็น 4 และ 2 จะได้ยังตรงกัน
+   ช่องโน้ตยืดเต็มห้อง ห้องที่โน้ตแน่นเกินช่องขั้นต่ำจะดันคอลัมน์ให้กว้างขึ้นเอง */
+.cells{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
 .cell{
   border:1px solid var(--line);border-radius:8px;background:rgba(16,14,10,.6);
-  padding:4px;display:flex;flex-direction:column;gap:3px;min-width:0;
+  padding:4px;display:flex;flex-direction:column;gap:3px;
 }
 .cell .slots{display:flex;gap:3px}
 .slot{
-  width:34px;height:38px;display:grid;place-items:center;
+  flex:1 1 0;min-width:20px;height:38px;display:grid;place-items:center;
   background:var(--slot);border-radius:5px;
   font-size:19px;line-height:1;color:var(--fg);
   transition:background .08s,color .08s,transform .08s;
   cursor:default;user-select:none;
 }
 .slot.tie{color:#6b5c46;font-size:15px}
-.slot.grp{font-size:12.5px;letter-spacing:-.5px;color:var(--gold)}
+.slot.grp{font-size:12.5px;letter-spacing:-.5px;color:var(--gold);min-width:max-content}
 .slot.on.grp{color:#1d1608}
 .kh{font-style:normal;font-size:10px;color:var(--gold);vertical-align:super;margin-left:1px}
 .slot.on .kh{color:#1d1608}
@@ -193,7 +195,6 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
   .cell.syls{display:grid}
   .cell.syls > *{grid-column:1/-1}
   .cell.syls .slots,.cell.syls .lyr.syl{display:grid;grid-template-columns:subgrid;width:auto;min-width:0}
-  .cell.syls .slot{width:auto;min-width:34px}
 }
 
 /* แก้ในตาราง */
@@ -225,6 +226,8 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
 .hint a{color:var(--gold)}
 
 @media(max-width:900px){ main{grid-template-columns:1fr} }
+@media screen and (max-width:999px){ .cells{grid-template-columns:repeat(4,1fr)} }
+@media screen and (max-width:499px){ .cells{grid-template-columns:repeat(2,1fr)} }
 
 /* ---------- มือถือ ---------- */
 @media(max-width:640px){
@@ -281,10 +284,9 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   .keyrow:last-child{flex-wrap:wrap}
   .keyrow:last-child .key{flex:0 0 auto;padding:0 10px}
 
-  /* ช่องโน้ตเล็กลงหน่อย จะได้ลงบรรทัดละหลายห้อง */
-  .slot{width:30px;height:34px;font-size:17px}
+  /* ช่องโน้ตเตี้ยลงหน่อย */
+  .slot{height:34px;font-size:17px}
   .cell .lyr{font-size:13px}
-  .cell.syls .slot{min-width:30px}
   body.editing #keys{bottom:calc(64px + env(safe-area-inset-bottom, 0px));padding:7px 8px;align-items:stretch}
   body.editing .keyrow:last-child .tag{display:none}          /* แถวปุ่มอื่น ๆ ต้องพอดีบรรทัดเดียว */
   body.editing .keyrow:last-child .key{padding:0 9px}
