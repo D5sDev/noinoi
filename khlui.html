@@ -470,12 +470,17 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
       </div>
       <div class="checks">
         <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>
+        <label class="check"><input type="checkbox" id="echo"> เอคโค่</label>
         <label class="check"><input type="checkbox" id="loop"> เล่นวน</label>
         <label class="check"><input type="checkbox" id="follow" checked> เลื่อนจอตามโน้ต</label>
       </div>
       <div class="field">
         <label>ระดับเสียงฉิ่ง–ฉับ <b><span id="chingVolV">25</span>%</b></label>
         <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+      </div>
+      <div class="field">
+        <label>ระดับเอคโค่ <b><span id="echoVolV">40</span>%</b></label>
+        <input type="range" id="echoVol" min="0" max="100" step="1" value="40">
       </div>
     </div>
   </section>
@@ -889,6 +894,8 @@ function makeIR(ctx){
   }
   return buf;
 }
+// เอคโค่: หน่วง 0.32 วินาที แต่ละรอบเบาลงเหลือ 40% จาง −60 dB ในราว 8 รอบ
+const ECHO_TIME=.32, ECHO_FB=.4, ECHO_TAIL=2.5;
 function buildGraph(ctx,o){
   const master = ctx.createGain(); master.gain.value = o.volume;
   const comp = ctx.createDynamicsCompressor();
@@ -904,7 +911,15 @@ function buildGraph(ctx,o){
   const bus   = ctx.createGain();
   const ching = ctx.createGain(); ching.gain.value = o.chingVol;
   bus.connect(mix); ching.connect(mix);
-  return {bus,ching,mix,master};
+  // ส่งเฉพาะเสียงขลุ่ย ฉิ่ง–ฉับจะได้ไม่เลอะจังหวะ · กรองในลูป แต่ละรอบจึงทึบลงเหมือนเสียงสะท้อนจริง
+  const echo  = ctx.createGain(); echo.gain.value = o.echo;
+  const delay = ctx.createDelay(1); delay.delayTime.value = ECHO_TIME;
+  const tone  = ctx.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=3000;
+  const fb    = ctx.createGain(); fb.gain.value = ECHO_FB;
+  bus.connect(echo); echo.connect(delay); delay.connect(tone);
+  tone.connect(fb); fb.connect(delay);
+  tone.connect(mix);
+  return {bus,ching,mix,master,echo,fb};
 }
 
 function burst(ctx,dest,t0,opt){
@@ -1034,6 +1049,7 @@ function readOpts(){
     loop  : $('#loop').checked,
     volume: (+$('#vol').value)/100,
     chingVol: (+$('#chingVol').value)/100,
+    echo  : $('#echo').checked ? (+$('#echoVol').value)/100 : 0,
   };
 }
 
@@ -1832,10 +1848,17 @@ function tick(){
       follow(lastEl);
     }
   }
-  if(now>=endTime){ stop(); return; }
+  if(now>=endTime){
+    // จบเพลงเอง ไม่ใช่กดหยุด — ปล่อยเอคโค่รอบสุดท้ายให้จางจนหมดก่อนค่อยรื้อกราฟ
+    if(readOpts().echo){ const g=graph; graph=null; setTimeout(()=>dropGraph(g),ECHO_TAIL*1000); }
+    stop(); return;
+  }
   raf=requestAnimationFrame(tick);
 }
 
+function dropGraph(g){
+  try{ [g.bus,g.ching,g.mix,g.master,g.fb].forEach(x=>x.disconnect()); }catch(e){}   // fb ตัดลูปหน่วงเวลา
+}
 function stopAudio(){
   if(!graph) return;
   const g=graph, n=ac.currentTime;
@@ -1844,7 +1867,7 @@ function stopAudio(){
     g.master.gain.setValueAtTime(g.master.gain.value,n);
     g.master.gain.linearRampToValueAtTime(0,n+.04);
   }catch(e){}
-  setTimeout(()=>{ try{ [g.bus,g.ching,g.mix,g.master].forEach(x=>x.disconnect()); }catch(e){} },120);
+  setTimeout(()=>dropGraph(g),120);
   graph=null;
 }
 // หยุดเสียงและตัวตั้งคิว แต่ยังไม่ยุ่งกับสถานะปุ่มหรือจุดที่พักไว้
@@ -1894,7 +1917,7 @@ async function exportWav(){
   const ev=buildEvents(o);
   btn.disabled=true; btn.textContent='กำลังเรนเดอร์…';
   try{
-    const sr=44100, tail=2.5;
+    const sr=44100, tail=2.5+(o.echo?ECHO_TAIL:0);
     const off=new OfflineAudioContext(2, Math.ceil((ev.total+tail)*sr), sr);
     const g=buildGraph(off,o);
     await ensureSamples(off, o.inst);
@@ -2007,9 +2030,20 @@ async function exportWav(){
   $('#ching').addEventListener('change',syncPerc);
   syncPerc();
 
+  // เปิด–ปิดได้ระหว่างเล่น ปิดแล้วเสียงที่ค้างในลูปจางไปเอง ไม่ถูกตัดกลางคัน
+  const syncEcho = ()=>{
+    $('#echoVol').disabled = !$('#echo').checked;
+    $('#echoVolV').textContent = $('#echoVol').value;
+    const v = readOpts().echo;
+    for(const g of [graph,previewG]) if(g) g.echo.gain.setTargetAtTime(v, ac.currentTime, .02);
+  };
+  $('#echo').addEventListener('change',syncEcho);
+  $('#echoVol').addEventListener('input',syncEcho);
+  syncEcho();
+
   // ---------- บันทึก / เปิดโน้ตพร้อมการตั้งค่า ----------
   const CTRLS = ['tempo','inst','tuning','key','oct','base','chan','vol',
-                 'chingVol','ching','loop','follow','perLine'];
+                 'chingVol','ching','echo','echoVol','loop','follow','perLine'];
 
   // หลังยัดค่าเข้า control แล้ว ต้องไล่อัปเดตตัวเลข ป้าย และหน้าจอที่ผูกกันไว้
   function refreshUI(){
@@ -2022,7 +2056,7 @@ async function exportWav(){
       : 'เสียงอ้างอิง — <b>ด</b> ของทางเพียงออล่าง (Hz)';
     if(prevWest) refWest = +$('#base').value||440;
     else         refThai = +$('#base').value||229.5;
-    syncPerc(); showKey(); render();
+    syncPerc(); syncEcho(); showKey(); render();
     if(typeof autoSave==='function') autoSave();
   }
 

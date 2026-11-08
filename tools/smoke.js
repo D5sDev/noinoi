@@ -58,7 +58,7 @@ const doc = {
 };
 
 // ---- Web Audio จำลอง ----
-let startedNodes = 0;
+let startedNodes = 0, lastTarget = null;
 class Param {
   constructor(v) { this.value = v; }
   setValueAtTime(v, t) { chk(v, 'setValueAtTime ค่า'); chk(t, 'setValueAtTime เวลา'); return this; }
@@ -68,14 +68,14 @@ class Param {
     if (!(v > 0)) throw new Error('exponentialRamp ต้องเป็นบวก ได้ ' + v);
     return this;
   }
-  setTargetAtTime() { return this; } cancelScheduledValues() { return this; }
+  setTargetAtTime(v) { lastTarget = v; return this; } cancelScheduledValues() { return this; }
 }
 const chk = (v, what) => { if (typeof v !== 'number' || !isFinite(v)) throw new Error(what + ' ไม่ใช่ตัวเลข: ' + v); };
 const mkNode = () => ({
   connect() {}, disconnect() {}, type: '', buffer: null,
   gain: new Param(1), frequency: new Param(440), Q: new Param(1),
   threshold: new Param(0), ratio: new Param(1), release: new Param(0),
-  playbackRate: new Param(1), detune: new Param(0),
+  playbackRate: new Param(1), detune: new Param(0), delayTime: new Param(0),
   loop: false, loopStart: 0, loopEnd: 0,
   start(t) { if (t !== undefined) chk(t, 'start() เวลา'); startedNodes++; }, stop() {},
 });
@@ -85,6 +85,7 @@ class Ctx {
   createGain() { return mkNode(); } createOscillator() { return mkNode(); }
   createBufferSource() { return mkNode(); } createBiquadFilter() { return mkNode(); }
   createConvolver() { return mkNode(); } createDynamicsCompressor() { return mkNode(); }
+  createDelay() { return mkNode(); }
   createBuffer(c, l, r) { return { numberOfChannels: c, length: l, sampleRate: r, duration: l / r, getChannelData: () => new Float32Array(l) }; }
   decodeAudioData(b) {
     if (!b || !b.byteLength) return Promise.reject(new Error('decodeAudioData ได้ข้อมูลว่าง'));
@@ -482,9 +483,39 @@ Promise.resolve(btn('play').onclick()).then(() => {
   }).then(() => {
     if (btn('pause').disabled !== false) die('เล่นต่อแล้วปุ่มพักยังกดไม่ได้');
     ok('เล่นต่อ — ตั้งคิวเสียงรวม ' + startedNodes + ' โหนด');
+
+    // เอคโค่ (เฉพาะหน้าขลุ่ย) — ค่าเริ่มต้นปิด เปิด/ปิดและปรับระดับได้ระหว่างเล่น
+    const echo = cache['#echo'], echoVol = cache['#echoVol'];
+    if (echo) {
+      if (echo.checked) die('เอคโค่ควรปิดเป็นค่าเริ่มต้น');
+      if (!echoVol.disabled) die('ปิดเอคโค่อยู่แต่แถบระดับยังปรับได้');
+      echo.checked = true; echo.fire('change');
+      if (echoVol.disabled) die('เปิดเอคโค่แล้วแถบระดับยังปรับไม่ได้');
+      if (lastTarget !== 0.4) die('เปิดเอคโค่ระหว่างเล่นแล้วเสียงไม่ตาม: ' + lastTarget);
+      echoVol.value = '70'; echoVol.fire('input');
+      if (lastTarget !== 0.7 || cache['#echoVolV'].textContent !== '70') die('ปรับระดับเอคโค่แล้วไม่ตาม: ' + lastTarget);
+      echo.checked = false; echo.fire('change');
+      if (lastTarget !== 0) die('ปิดเอคโค่ระหว่างเล่นแล้วเสียงยังส่งอยู่: ' + lastTarget);
+      ok('เอคโค่ — ค่าเริ่มต้นปิด · เปิด/ปิดและปรับระดับระหว่างเล่นได้');
+    }
+
     btn('stop').onclick();
     if (btn('stop').disabled !== true) die('กดหยุดแล้วปุ่มหยุดยังกดได้');
     ok('หยุด — ไม่ error');
+
+    if (echo) {
+      echo.checked = true; echo.fire('change');
+      btn('save').onclick();
+      const saved = lastBlob.parts.join('');
+      const st = JSON.parse(saved).settings;
+      if (st.echo !== true || st.echoVol !== '70') die('เซฟแล้วไม่จำค่าเอคโค่: ' + JSON.stringify([st.echo, st.echoVol]));
+      echo.checked = false; echoVol.value = '10'; echo.fire('change');
+      cache['#file'].fire('change', { target: { files: [{ _text: saved }], value: 'x' } });
+      if (!echo.checked || echoVol.value !== '70' || echoVol.disabled) die('เปิดไฟล์แล้วค่าเอคโค่ไม่กลับมา');
+      const old = JSON.parse(saved); delete old.settings.echo; delete old.settings.echoVol;
+      cache['#file'].fire('change', { target: { files: [{ _text: JSON.stringify(old) }], value: 'x' } });
+      ok('เอคโค่ — เซฟ/เปิดไฟล์จำค่าได้ · ไฟล์เก่าที่ไม่มีค่านี้ก็เปิดได้');
+    }
   }).catch(e => die('พังตอนทดสอบพัก/เล่นต่อ', e));
   return;
   /* eslint-disable no-unreachable */

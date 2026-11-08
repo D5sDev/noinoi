@@ -222,5 +222,77 @@ s = s[:i] + u"""const PRESETS = [
 
 """ + s[j:]
 
+# ═════ L. เอคโค่ — เปิด/ปิดได้ ส่งเฉพาะเสียงขลุ่ย ═════
+rep(u"""        <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>""",
+u"""        <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>
+        <label class="check"><input type="checkbox" id="echo"> เอคโค่</label>""", "echo check")
+rep(u"""        <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+      </div>""",
+u"""        <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+      </div>
+      <div class="field">
+        <label>ระดับเอคโค่ <b><span id="echoVolV">40</span>%</b></label>
+        <input type="range" id="echoVol" min="0" max="100" step="1" value="40">
+      </div>""", "echo slider")
+
+rep(u"function buildGraph(ctx,o){",
+u"""// เอคโค่: หน่วง 0.32 วินาที แต่ละรอบเบาลงเหลือ 40% จาง −60 dB ในราว 8 รอบ
+const ECHO_TIME=.32, ECHO_FB=.4, ECHO_TAIL=2.5;
+function buildGraph(ctx,o){""", "echo const")
+rep(u"""  bus.connect(mix); ching.connect(mix);
+  return {bus,ching,mix,master};""",
+u"""  bus.connect(mix); ching.connect(mix);
+  // ส่งเฉพาะเสียงขลุ่ย ฉิ่ง–ฉับจะได้ไม่เลอะจังหวะ · กรองในลูป แต่ละรอบจึงทึบลงเหมือนเสียงสะท้อนจริง
+  const echo  = ctx.createGain(); echo.gain.value = o.echo;
+  const delay = ctx.createDelay(1); delay.delayTime.value = ECHO_TIME;
+  const tone  = ctx.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=3000;
+  const fb    = ctx.createGain(); fb.gain.value = ECHO_FB;
+  bus.connect(echo); echo.connect(delay); delay.connect(tone);
+  tone.connect(fb); fb.connect(delay);
+  tone.connect(mix);
+  return {bus,ching,mix,master,echo,fb};""", "echo graph")
+
+rep(u"    chingVol: (+$('#chingVol').value)/100,",
+u"""    chingVol: (+$('#chingVol').value)/100,
+    echo  : $('#echo').checked ? (+$('#echoVol').value)/100 : 0,""", "echo opts")
+
+rep(u"function stopAudio(){",
+u"""function dropGraph(g){
+  try{ [g.bus,g.ching,g.mix,g.master,g.fb].forEach(x=>x.disconnect()); }catch(e){}   // fb ตัดลูปหน่วงเวลา
+}
+function stopAudio(){""", "echo drop")
+rep(u"  setTimeout(()=>{ try{ [g.bus,g.ching,g.mix,g.master].forEach(x=>x.disconnect()); }catch(e){} },120);",
+    u"  setTimeout(()=>dropGraph(g),120);", "echo stop")
+rep(u"  if(now>=endTime){ stop(); return; }",
+u"""  if(now>=endTime){
+    // จบเพลงเอง ไม่ใช่กดหยุด — ปล่อยเอคโค่รอบสุดท้ายให้จางจนหมดก่อนค่อยรื้อกราฟ
+    if(readOpts().echo){ const g=graph; graph=null; setTimeout(()=>dropGraph(g),ECHO_TAIL*1000); }
+    stop(); return;
+  }""", "echo ring")
+rep(u"    const sr=44100, tail=2.5;",
+    u"    const sr=44100, tail=2.5+(o.echo?ECHO_TAIL:0);", "echo wav")
+
+rep(u"""  $('#ching').addEventListener('change',syncPerc);
+  syncPerc();
+""",
+u"""  $('#ching').addEventListener('change',syncPerc);
+  syncPerc();
+
+  // เปิด–ปิดได้ระหว่างเล่น ปิดแล้วเสียงที่ค้างในลูปจางไปเอง ไม่ถูกตัดกลางคัน
+  const syncEcho = ()=>{
+    $('#echoVol').disabled = !$('#echo').checked;
+    $('#echoVolV').textContent = $('#echoVol').value;
+    const v = readOpts().echo;
+    for(const g of [graph,previewG]) if(g) g.echo.gain.setTargetAtTime(v, ac.currentTime, .02);
+  };
+  $('#echo').addEventListener('change',syncEcho);
+  $('#echoVol').addEventListener('input',syncEcho);
+  syncEcho();
+""", "echo sync")
+rep(u"'chingVol','ching','loop','follow','perLine'];",
+    u"'chingVol','ching','echo','echoVol','loop','follow','perLine'];", "echo ctrls")
+rep(u"    syncPerc(); showKey(); render();",
+    u"    syncPerc(); syncEcho(); showKey(); render();", "echo refresh")
+
 io.open(dst, 'w', encoding='utf-8', newline='').write(s)
 print("khlui.html ->", len(s), "chars")
