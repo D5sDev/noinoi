@@ -133,6 +133,12 @@ input[type=range]:disabled{opacity:.3;cursor:not-allowed}
 .checks{display:flex;flex-wrap:wrap;gap:14px;padding-top:2px}
 .check{display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer;color:var(--fg)}
 .check input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+/* ช่องเปิด–ปิดอยู่หัวแถบระดับของมันเอง · ช่องต้องไม่จางตามแถบ ไม่งั้นดูเหมือนกดไม่ได้ */
+.fieldhead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.fieldhead b{color:var(--gold);font-variant-numeric:tabular-nums}
+.field:has(input[type=range]:disabled) .fieldhead b{opacity:.45}
+.headr .checks{padding-top:0}
+.headr .check{font-size:12.5px}
 
 /* score */
 /* ตารางเลื่อนในกรอบตัวเอง ตอนเล่นหน้าเว็บจะได้อยู่นิ่ง — สูงพอดีจอใต้หัวเรื่อง (--toph ตั้งใน init())
@@ -301,6 +307,7 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
   body.editing{padding-bottom:calc(64px + 210px + env(safe-area-inset-bottom, 0px))}
   body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-top:70px;scroll-margin-bottom:290px}
   .panel-head:has(#editGrid){flex-wrap:wrap}
+  .headr{display:contents}             /* ช่องติ๊กขึ้นแถวเดียวกับชื่อตาราง หัวจะได้ไม่สูงจนกินที่ดูโน้ต */
   .cells{gap:5px}
   .linenum{flex-basis:20px;font-size:11px}
   .line{scroll-margin-top:66px}      /* เผื่อความสูงของหัวเรื่องที่หนึบอยู่ */
@@ -476,14 +483,12 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
         <label>ระดับเสียง <b><span id="volV">80</span>%</b></label>
         <input type="range" id="vol" min="0" max="100" step="1" value="80">
       </div>
-      <div class="checks">
-        <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>
-        <label class="check"><input type="checkbox" id="loop"> เล่นวน</label>
-        <label class="check"><input type="checkbox" id="follow" checked> เลื่อนจอตามโน้ต</label>
-      </div>
       <div class="field">
-        <label>ระดับเสียงฉิ่ง–ฉับ <b><span id="chingVolV">25</span>%</b></label>
-        <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+        <div class="fieldhead">
+          <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>
+          <b><span id="chingVolV">25</span>%</b>
+        </div>
+        <input type="range" id="chingVol" aria-label="ระดับเสียงฉิ่ง–ฉับ" min="0" max="150" step="1" value="25">
       </div>
     </div>
   </section>
@@ -492,6 +497,10 @@ body.editing .slot,body.editing .cell .lyr,body.editing .lyr span{scroll-margin-
     <div class="panel-head">
       <h2>บรรทัดโน้ต</h2>
       <div class="headr">
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="loop"> เล่นวน</label>
+          <label class="check"><input type="checkbox" id="follow" checked> เลื่อนจอตามโน้ต</label>
+        </div>
         <span class="meta" id="meta"></span>
         <button class="btn sm" id="editGrid" title="พิมพ์โน้ตและเนื้อร้องลงตารางนี้ได้เลย แป้นโน้ตจะย้ายมาเกาะล่างจอ">✎ แก้ในตาราง</button>
       </div>

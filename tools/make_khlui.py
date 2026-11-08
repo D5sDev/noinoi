@@ -223,17 +223,17 @@ s = s[:i] + u"""const PRESETS = [
 """ + s[j:]
 
 # ═════ L. เอคโค่ — เปิด/ปิดได้ ส่งเฉพาะเสียงขลุ่ย ═════
-rep(u"""        <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>""",
-u"""        <label class="check"><input type="checkbox" id="ching" checked> ฉิ่ง–ฉับ</label>
-        <label class="check"><input type="checkbox" id="echo"> เอคโค่</label>""", "echo check")
-rep(u"""        <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+rep(u"""        <input type="range" id="chingVol" aria-label="ระดับเสียงฉิ่ง–ฉับ" min="0" max="150" step="1" value="25">
       </div>""",
-u"""        <input type="range" id="chingVol" min="0" max="150" step="1" value="25">
+u"""        <input type="range" id="chingVol" aria-label="ระดับเสียงฉิ่ง–ฉับ" min="0" max="150" step="1" value="25">
       </div>
       <div class="field">
-        <label>ระดับเอคโค่ <b><span id="echoVolV">40</span>%</b></label>
-        <input type="range" id="echoVol" min="0" max="100" step="1" value="40">
-      </div>""", "echo slider")
+        <div class="fieldhead">
+          <label class="check"><input type="checkbox" id="echo"> เอคโค่</label>
+          <b><span id="echoVolV">40</span>%</b>
+        </div>
+        <input type="range" id="echoVol" aria-label="ระดับเอคโค่" min="0" max="100" step="1" value="40">
+      </div>""", "echo field")
 
 rep(u"function buildGraph(ctx,o){",
 u"""// เอคโค่: หน่วง 0.32 วินาที แต่ละรอบเบาลงเหลือ 40% จาง −60 dB ในราว 8 รอบ
